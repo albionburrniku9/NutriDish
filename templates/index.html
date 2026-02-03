@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <h1>Cook Smarter with <br> <span class="gradient-text">What You Have</span></h1>
+        <p>Personalized AI recipe recommendations based on your pantry and unique dietary needs.</p>
+    </div>
+</section>
+
+<section class="app-interface glass-panel">
+    <div class="input-group">
+        <label for="restriction-input">
+            <ion-icon name="warning-outline"></ion-icon> Dietary Restrictions
+        </label>
+        <div class="custom-select-wrapper">
+            <select id="restriction-input">
+                <option value="" disabled selected>Select a restriction...</option>
+                <option value="None">None</option>
+                <option value="Lactose Intolerant">Lactose Intolerant</option>
+                <option value="Gluten Free">Gluten Free</option>
+                <option value="Vegan">Vegan</option>
+                <option value="Vegetarian">Vegetarian</option>
+                <option value="Nut Free">Nut Free</option>
+            </select>
+        </div>
+        <small>Select from list or type your own.</small>
+    </div>
+
+    <div class="input-group">
+        <label for="ingredients-input">
+            <ion-icon name="basket-outline"></ion-icon> What's in your pantry?
+        </label>
+        <textarea id="ingredients-input" rows="3" placeholder="e.g. Rice, Soy Sauce, Chicken, Broccoli..."></textarea>
+    </div>
+
+    <button id="get-recipes-btn" class="glow-button">
+        <span class="btn-text">Inspire Me</span>
+        <ion-icon name="sparkles-outline"></ion-icon>
+    </button>
+</section>
+
+<section id="results-section" class="results-grid">
+    <!-- Results will be injected here via JS -->
+</section>
+
+<div id="loading-spinner" class="spinner-overlay hidden">
+    <div class="spinner"></div>
+</div>
+
+<!-- Warning Modal -->
+<div id="warning-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="modal-icon">
+            <ion-icon name="alert-circle"></ion-icon>
+        </div>
+        <h3>Dietary Conflict Detected!</h3>
+        <p id="warning-message">You cannot consume this ingredient.</p>
+        <button id="close-modal-btn" class="glow-button warning-btn">Got it</button>
+    </div>
+</div>
+
+<!-- Recipe Detail Modal -->
+<div id="recipe-modal" class="modal-overlay hidden">
+    <div class="modal-content recipe-modal-content">
+        <button id="close-recipe-modal-btn" class="close-icon-btn">
+            <ion-icon name="close-outline"></ion-icon>
+        </button>
+        <h3 id="modal-recipe-title">Recipe Title</h3>
+
+        <div class="modal-scroll-area">
+            <h4>Ingredients</h4>
+            <ul id="modal-recipe-ingredients" class="ingredient-list"></ul>
+
+            <h4>Instructions</h4>
+            <div id="modal-recipe-instructions" class="instruction-text"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
