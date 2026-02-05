@@ -3,39 +3,39 @@
 {% block content %}
 <section class="hero">
     <div class="hero-content">
-        <h1>Cook Smarter with <br> <span class="gradient-text">What You Have</span></h1>
-        <p>Personalized AI recipe recommendations based on your pantry and unique dietary needs.</p>
+        <h1>{{ t['hero_title_1'] }} <br> <span class="gradient-text">{{ t['hero_title_2'] }}</span></h1>
+        <p>{{ t['hero_desc'] }}</p>
     </div>
 </section>
 
 <section class="app-interface glass-panel">
     <div class="input-group">
         <label for="restriction-input">
-            <ion-icon name="warning-outline"></ion-icon> Dietary Restrictions
+            <ion-icon name="warning-outline"></ion-icon> {{ t['lbl_restrictions'] }}
         </label>
         <div class="custom-select-wrapper">
             <select id="restriction-input">
-                <option value="" disabled selected>Select a restriction...</option>
-                <option value="None">None</option>
-                <option value="Lactose Intolerant">Lactose Intolerant</option>
-                <option value="Gluten Free">Gluten Free</option>
-                <option value="Vegan">Vegan</option>
-                <option value="Vegetarian">Vegetarian</option>
-                <option value="Nut Free">Nut Free</option>
+                <option value="" disabled selected>{{ t['opt_select'] }}</option>
+                <option value="None">{{ t['opt_none'] }}</option>
+                <option value="Lactose Intolerant">{{ t['opt_lactose'] }}</option>
+                <option value="Gluten Free">{{ t['opt_gluten'] }}</option>
+                <option value="Vegan">{{ t['opt_vegan'] }}</option>
+                <option value="Vegetarian">{{ t['opt_vegetarian'] }}</option>
+                <option value="Nut Free">{{ t['opt_nutfree'] }}</option>
             </select>
         </div>
-        <small>Select from list or type your own.</small>
+        <small>{{ t['help_select'] }}</small>
     </div>
 
     <div class="input-group">
         <label for="ingredients-input">
-            <ion-icon name="basket-outline"></ion-icon> What's in your pantry?
+            <ion-icon name="basket-outline"></ion-icon> {{ t['lbl_pantry'] }}
         </label>
-        <textarea id="ingredients-input" rows="3" placeholder="e.g. Rice, Soy Sauce, Chicken, Broccoli..."></textarea>
+        <textarea id="ingredients-input" rows="3" placeholder="{{ t['ph_pantry'] }}"></textarea>
     </div>
 
     <button id="get-recipes-btn" class="glow-button">
-        <span class="btn-text">Inspire Me</span>
+        <span class="btn-text">{{ t['btn_inspire'] }}</span>
         <ion-icon name="sparkles-outline"></ion-icon>
     </button>
 </section>
@@ -54,12 +54,27 @@
         <div class="modal-icon">
             <ion-icon name="alert-circle"></ion-icon>
         </div>
-        <h3>Dietary Conflict Detected!</h3>
+        <h3>{{ t['alert_conflict'] }}</h3>
         <p id="warning-message">You cannot consume this ingredient.</p>
-        <button id="close-modal-btn" class="glow-button warning-btn">Got it</button>
+        <button id="close-modal-btn" class="glow-button warning-btn">{{ t['btn_got_it'] }}</button>
     </div>
 </div>
 
+<!-- Inject Translations for JS -->
+<script>
+    window.langData = {
+        msg_no_recipes: "{{ t['msg_no_recipes'] }}",
+        msg_try_adjust: "{{ t['msg_try_adjust'] }}",
+        card_ingredients: "{{ t['card_ingredients'] }}",
+        card_instructions: "{{ t['card_instructions'] }}",
+        btn_read_more: "{{ t['btn_read_more'] }}",
+        val_empty: "{{ t['val_empty'] }}",
+        val_conflict_msg: {{ t['val_conflict_msg'] | tojson }},
+    err_generic: "{{ t['err_generic'] }}"
+    };
+</script>
+
+<!-- Recipe Detail Modal -->
 <!-- Recipe Detail Modal -->
 <div id="recipe-modal" class="modal-overlay hidden">
     <div class="modal-content recipe-modal-content">
@@ -69,10 +84,10 @@
         <h3 id="modal-recipe-title">Recipe Title</h3>
 
         <div class="modal-scroll-area">
-            <h4>Ingredients</h4>
+            <h4>{{ t['modal_ingredients'] }}</h4>
             <ul id="modal-recipe-ingredients" class="ingredient-list"></ul>
 
-            <h4>Instructions</h4>
+            <h4>{{ t['modal_instructions'] }}</h4>
             <div id="modal-recipe-instructions" class="instruction-text"></div>
         </div>
     </div>

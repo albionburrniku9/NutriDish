@@ -56,22 +56,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const restriction = restrictionInput.value;
 
         if (!ingredientsVal) {
-            alert("Please enter at least one ingredient!");
+            alert(window.langData.val_empty);
             return;
         }
 
-        // FEATURE: Validation for Restrictions
-        if (restriction && restriction !== "None" && restrictionMap[restriction]) {
-            const forbiddenItems = restrictionMap[restriction];
-            // Check if any forbidden item is in the input string
-            const foundConflicts = forbiddenItems.filter(item => ingredientsVal.includes(item));
-
-            if (foundConflicts.length > 0) {
-                warningMessage.innerHTML = `You have selected <strong>${restriction}</strong>, but your pantry contains: <br><br> <span style="color:#FF6B6B; font-weight:bold;">${foundConflicts.join(", ")}</span>. <br><br>Please remove these items to get safe recommendations.`;
-                warningModal.classList.remove('hidden');
-                return; // Stop execution
-            }
-        }
+        // --- Client side generic check removed, relying on Server API for detailed conflict check ---
 
         // Show Loading
         loadingSpinner.classList.remove('hidden');
@@ -91,15 +80,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
 
-            // Artificial delay to show off the fancy spinner (Optional 500ms)
             setTimeout(() => {
-                displayResults(data.results);
                 loadingSpinner.classList.add('hidden');
+
+                if (data.status === 'conflict') {
+                    // SERVER DETECTED CONFLICT
+
+                    // 1. Get the Localized Name of the restriction (from the UI dropdown)
+                    const restrictionSelect = document.getElementById('restriction-input');
+                    const selectedText = restrictionSelect.options[restrictionSelect.selectedIndex].text;
+
+                    // 2. Use format string replacement
+                    let msg = window.langData.val_conflict_msg
+                        .replace('{0}', selectedText)
+                        .replace('{1}', data.conflict_item); // Item returned by server (now translated)
+
+                    warningMessage.innerHTML = msg;
+                    warningModal.classList.remove('hidden');
+                } else if (data.status === 'ok') {
+                    // SUCCESS
+                    displayResults(data.data);
+                } else {
+                    // Error or unknown state
+                    console.error("Unknown Server Status:", data);
+                    alert(window.langData.err_generic);
+                }
             }, 600);
 
         } catch (error) {
             console.error('Error:', error);
-            alert("Something went wrong. Please try again.");
+            alert(window.langData.err_generic);
             loadingSpinner.classList.add('hidden');
         }
     });
@@ -108,8 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!recipes || recipes.length === 0) {
             resultsSection.innerHTML = `
                 <div style="grid-column: 1/-1; text-align: center; padding: 2rem;">
-                    <h3>No matching recipes found 😕</h3>
-                    <p>Try adding more ingredients or changing your restrictions.</p>
+                    <h3>${window.langData.msg_no_recipes}</h3>
+                    <p>${window.langData.msg_try_adjust}</p>
                 </div>
             `;
             return;
@@ -134,18 +144,18 @@ document.addEventListener('DOMContentLoaded', () => {
             card.innerHTML = `
                 <div class="card-header">
                     <h3>${recipe.name}</h3>
-                    <span class="match-score">${recipe.score} Ingredient Match${recipe.score > 1 ? 'es' : ''}</span>
+                    <span class="match-score">${recipe.score}</span>
                 </div>
                 <div class="card-body">
-                    <h4>Ingredients Used</h4>
+                    <h4>${window.langData.card_ingredients}</h4>
                     <p>${previewIngredients}</p>
                     
-                    <h4>Instructions</h4>
+                    <h4>${window.langData.card_instructions}</h4>
                     <p>${previewText}</p>
                 </div>
                 <div class="card-footer">
                     <button class="read-more-btn">
-                        Read More <ion-icon name="arrow-forward-outline"></ion-icon>
+                        ${window.langData.btn_read_more} <ion-icon name="arrow-forward-outline"></ion-icon>
                     </button>
                 </div>
             `;
