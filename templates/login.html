@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    /* Scoped Styles for Auth Pages to match the reference */
+    .auth-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+        width: 100%;
+        padding: 20px;
+    }
+
+    .auth-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 2rem;
+        color: white;
+        text-align: center;
+    }
+
+    .auth-card {
+        background-color: #18181b;
+        /* Dark card bg */
+        border-radius: 12px;
+        padding: 40px;
+        width: 100%;
+        max-width: 440px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .auth-input {
+        width: 100%;
+        background: transparent;
+        border: 1px solid #3f3f46;
+        border-radius: 30px;
+        /* Pill shape inputs */
+        padding: 14px 20px;
+        color: white;
+        font-size: 1rem;
+        outline: none;
+        transition: border-color 0.3s;
+    }
+
+    .auth-input:focus {
+        border-color: #d83bd2;
+        /* Brand Purple/Pink focus */
+    }
+
+    .auth-input::placeholder {
+        color: #71717a;
+    }
+
+    .btn-primary {
+        width: 100%;
+        background: linear-gradient(135deg, #FF6B6B 0%, #d83bd2 100%);
+        /* Brand Gradient */
+        color: white;
+        border: none;
+        border-radius: 30px;
+        /* Pill shape button */
+        padding: 14px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        margin-top: 10px;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(216, 59, 210, 0.4);
+    }
+
+    .forgot-pass {
+        display: block;
+        text-align: center;
+        color: #d4d4d8;
+        margin: 20px 0;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+
+    .forgot-pass:hover {
+        text-decoration: underline;
+    }
+
+    .divider {
+        height: 1px;
+        background-color: #3f3f46;
+        margin: 20px 0;
+        width: 100%;
+    }
+
+    .btn-secondary {
+        display: block;
+        width: 100%;
+        background-color: transparent;
+        border: 1px solid #FF6B6B;
+        color: #FF6B6B;
+        text-align: center;
+        text-decoration: none;
+        border-radius: 30px;
+        padding: 14px;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: background-color 0.2s;
+    }
+
+    .btn-secondary:hover {
+        background-color: rgba(255, 107, 107, 0.1);
+    }
+</style>
+
+<div class="auth-wrapper">
+    <h1 class="auth-title">{{ t['auth_login_title'] }}</h1>
+
+    <div class="auth-card">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div
+            style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 20px; font-size: 0.9rem;">
+            {{ messages[0] }}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="form-group">
+                <input type="text" name="username" class="auth-input" placeholder="{{ t['auth_username'] }}" required>
+            </div>
+
+            <div class="form-group">
+                <input type="password" name="password" class="auth-input" placeholder="{{ t['auth_password'] }}"
+                    required>
+            </div>
+
+            <button type="submit" class="btn-primary">{{ t['auth_login_btn'] }}</button>
+        </form>
+
+        <a href="#" class="forgot-pass">{{ t['auth_forgot'] }}</a>
+
+        <div class="divider"></div>
+
+        <a href="{{ url_for('signup') }}" class="btn-secondary">{{ t['auth_create_account'] }}</a>
+    </div>
+</div>
+{% endblock %}

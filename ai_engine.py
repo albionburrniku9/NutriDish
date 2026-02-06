@@ -176,7 +176,8 @@ class RecipeRecommender:
                     "name": t_name,
                     "ingredients": t_ing,
                     "instructions": t_instr,
-                    "score": recipe['score']
+                    "score": recipe.get('score', ''),
+                    "id": recipe.get('id', '')
                 })
             except Exception as e:
                 print(f"Translation Error for recipe {recipe['name']}: {e}")

@@ -25,11 +25,18 @@
     </div>
 
     <nav class="glass-nav">
-        <div class="logo">NutriDish <span class="ai-badge">AI</span></div>
+        <a href="{{ url_for('home') }}" class="logo" style="text-decoration: none; color: inherit;">NutriDish <span
+                class="ai-badge">AI</span></a>
         <ul class="nav-links">
-            <li><a href="#" class="active">{{ t['nav_home'] }}</a></li>
+            <li><a href="{{ url_for('home') }}" class="active">{{ t['nav_home'] }}</a></li>
             <li><a href="#">{{ t['nav_lab'] }} <span class="soon-badge">{{ t['nav_soon'] }}</span></a></li>
-            <li><a href="#">{{ t['nav_profile'] }}</a></li>
+
+            {% if current_user.is_authenticated %}
+            <li><a href="{{ url_for('profile') }}">{{ t['nav_profile'] }}</a></li>
+            <li><a href="{{ url_for('logout') }}" style="color: #ff6b6b;">{{ t['nav_logout'] }}</a></li>
+            {% else %}
+            <li><a href="{{ url_for('login') }}">{{ t['nav_login'] }}</a></li>
+            {% endif %}
             <li class="lang-selector">
                 <select id="language-select" onchange="window.location.href='/set_lang/'+this.value">
                     <option value="en" {% if lang=='en' %}selected{% endif %}>🇬🇧 EN</option>
@@ -95,7 +102,10 @@
         {% block content %}{% endblock %}
     </main>
 
-    <script src="{{ url_for('static', filename='js/main.js') }}?v=2"></script>
+    <script>
+        window.userLoggedIn = "{{ 'true' if current_user.is_authenticated else 'false' }}" === "true";
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}?v=3"></script>
 </body>
 
 </html>

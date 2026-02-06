@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- User Info Bar -->
+<div class="profile-user-bar"
+    style="max-width: 1200px; margin: 10px auto 0; padding: 0 1rem; display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <div
+            style="width: 50px; height: 50px; background: linear-gradient(135deg, #FF6B6B, #d83bd2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; color: white;">
+            {{ current_user.first_name[0] | upper }}{{ current_user.last_name[0] | upper }}
+        </div>
+        <div>
+            <p style="color: #9ca3af; font-size: 0.85rem; margin: 0;">{{ t['profile_welcome'] }}</p>
+            <p style="color: white; font-size: 1.2rem; font-weight: 600; margin: 0;">{{ current_user.first_name }} {{
+                current_user.last_name }}</p>
+        </div>
+    </div>
+
+    <!-- Burger Menu -->
+    <div class="profile-menu-container" style="position: relative;">
+        <button id="profile-burger-btn"
+            style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.6rem 0.8rem; cursor: pointer; color: white; display: flex; align-items: center; gap: 0.5rem;">
+            <ion-icon name="settings-outline" style="font-size: 1.2rem;"></ion-icon>
+            {{ t['profile_settings'] }}
+            <ion-icon name="chevron-down-outline"></ion-icon>
+        </button>
+
+        <div id="profile-dropdown" class="profile-dropdown hidden"
+            style="position: absolute; top: 100%; right: 0; margin-top: 0.5rem; background: #1e1e24; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; min-width: 200px; overflow: hidden; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <button id="change-pass-btn"
+                style="width: 100%; padding: 1rem; background: none; border: none; color: white; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 0.75rem; transition: background 0.2s;"
+                onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">
+                <ion-icon name="key-outline"></ion-icon>
+                {{ t['profile_change_pass'] }}
+            </button>
+        </div>
+    </div>
+</div>
+
+<section class="results-grid px-4 max-w-7xl mx-auto" style="margin-top: 30px; padding-top: 0;">
+    <!-- Header -->
+    <div style="grid-column: 1/-1; text-align: center; margin-bottom: 3rem;">
+        <h2 class="text-4xl font-bold text-white">{{ t['profile_title'] }}</h2>
+    </div>
+
+    {% if recipes %}
+    {% for recipe in recipes %}
+    <div class="recipe-card">
+        <!-- Card Header -->
+        <div class="card-header">
+            <h3>{{ recipe.name }}</h3>
+            <span class="match-score custom-saved-badge"
+                style="background: linear-gradient(135deg, #FF6B6B, #d83bd2);">{{ t['badge_saved'] }}</span>
+        </div>
+
+        <!-- Card Body: Ingredients Only -->
+        <div class="card-body">
+            <h4>{{ t['card_ingredients'] }}</h4>
+            <!-- Ingredients Preview -->
+            <p>{{ recipe.ingredients }}</p>
+        </div>
+
+        <!-- Card Footer: Read More -->
+        <div class="card-footer" style="margin-top: auto; padding-top: 1rem;">
+            <button class="view-recipe-btn"
+                style="width: 100%; padding: 0.8rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; cursor: pointer; transition: all 0.2s;"
+                onmouseover="this.style.background='rgba(255,255,255,0.2)'"
+                onmouseout="this.style.background='rgba(255,255,255,0.1)'" data-recipe='{{ recipe|tojson|safe }}'>
+                {{ t['btn_read_more'] }} <ion-icon name="arrow-forward-outline"></ion-icon>
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div
+        style="grid-column: 1/-1; text-align: center; padding: 4rem; background: rgba(255,255,255,0.05); border-radius: 12px;">
+        <ion-icon name="book-outline" style="font-size: 4rem; color: #6b7280; margin-bottom: 1rem;"></ion-icon>
+        <p style="font-size: 1.25rem; color: #9ca3af; margin-bottom: 2rem;">{{ t['profile_no_saved'] }}</p>
+        <a href="{{ url_for('home') }}"
+            style="background: linear-gradient(135deg, #FF6B6B 0%, #d83bd2 100%); padding: 12px 30px; border-radius: 30px; text-decoration: none; color: white; font-weight: bold;">
+            {{ t['profile_find_btn'] }}
+        </a>
+    </div>
+    {% endif %}
+</section>
+
+<!-- Reuse EXACT Homepage Modal Structure -->
+<div id="recipe-modal" class="modal-overlay hidden">
+    <div class="modal-content recipe-modal-content">
+        <!-- Close Button -->
+        <button id="close-recipe-modal-btn" class="close-icon-btn" onclick="closeProfileModal()">
+            <ion-icon name="close-outline"></ion-icon>
+        </button>
+
+        <!-- Title -->
+        <h3 id="modal-recipe-title">{{ t['lbl_recipe_title'] }}</h3>
+
+        <!-- Scroll Area -->
+        <div class="modal-scroll-area">
+            <!-- Ingredients -->
+            <h4>{{ t['modal_ingredients'] }}</h4>
+            <ul id="modal-recipe-ingredients" class="ingredient-list">
+                <!-- JS Fill -->
+            </ul>
+
+            <!-- Instructions -->
+            <h4>{{ t['modal_instructions'] }}</h4>
+            <div id="modal-recipe-instructions" class="instruction-text">
+                <!-- JS Fill -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div id="password-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 450px; padding: 2rem;">
+        <button id="close-pass-modal" class="close-icon-btn">
+            <ion-icon name="close-outline"></ion-icon>
+        </button>
+
+        <h3 style="margin-bottom: 1.5rem; font-size: 1.5rem;">{{ t['profile_change_pass'] }}</h3>
+
+        <form action="{{ url_for('change_password') }}" method="POST">
+            <div class="input-group">
+                <label for="current_password">{{ t['profile_current_pass'] }}</label>
+                <input type="password" id="current_password" name="current_password" required>
+            </div>
+
+            <div class="input-group">
+                <label for="new_password">{{ t['profile_new_pass'] }}</label>
+                <input type="password" id="new_password" name="new_password" required>
+                <small>{{ t['val_pass_hint'] }}</small>
+            </div>
+
+            <div class="input-group">
+                <label for="confirm_password">{{ t['profile_confirm_pass'] }}</label>
+                <input type="password" id="confirm_password" name="confirm_password" required>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button type="button" id="cancel-pass-btn"
+                    style="flex: 1; padding: 0.8rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; cursor: pointer;">
+                    {{ t['profile_cancel_btn'] }}
+                </button>
+                <button type="submit"
+                    style="flex: 1; padding: 0.8rem; background: linear-gradient(135deg, #FF6B6B, #d83bd2); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">
+                    {{ t['profile_save_btn'] }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const recipeModal = document.getElementById('recipe-modal');
+        const modalTitle = document.getElementById('modal-recipe-title');
+        const modalIngredients = document.getElementById('modal-recipe-ingredients');
+        const modalInstructions = document.getElementById('modal-recipe-instructions');
+
+        // Close logic
+        window.closeProfileModal = function () {
+            recipeModal.classList.add('hidden');
+            document.body.style.overflow = '';
+        };
+
+        // Click outside closes modal
+        recipeModal.addEventListener('click', (e) => {
+            if (e.target === recipeModal) {
+                closeProfileModal();
+            }
+        });
+
+        // Open Logic
+        document.querySelectorAll('.view-recipe-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const recipe = JSON.parse(btn.getAttribute('data-recipe'));
+
+                // 1. Title
+                modalTitle.innerText = recipe.name;
+
+                // 2. Ingredients List
+                modalIngredients.innerHTML = '';
+                const ingredientsArray = recipe.ingredients.split(',').map(i => i.trim());
+                ingredientsArray.forEach(ing => {
+                    const li = document.createElement('li');
+                    li.textContent = ing; // Match homepage simplified style
+                    modalIngredients.appendChild(li);
+                });
+
+                // 3. Instructions
+                modalInstructions.innerText = recipe.instructions;
+
+                // Show Modal
+                recipeModal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            });
+        });
+
+        // Keydown Close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !recipeModal.classList.contains('hidden')) {
+                closeProfileModal();
+            }
+        });
+    });
+
+    // Burger Menu Toggle
+    const burgerBtn = document.getElementById('profile-burger-btn');
+    const dropdown = document.getElementById('profile-dropdown');
+
+    burgerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', () => {
+        dropdown.classList.add('hidden');
+    });
+
+    // Change Password Modal
+    const changePassBtn = document.getElementById('change-pass-btn');
+    const passModal = document.getElementById('password-modal');
+
+    changePassBtn.addEventListener('click', () => {
+        dropdown.classList.add('hidden');
+        passModal.classList.remove('hidden');
+    });
+
+    document.getElementById('close-pass-modal').addEventListener('click', () => {
+        passModal.classList.add('hidden');
+    });
+
+    document.getElementById('cancel-pass-btn').addEventListener('click', () => {
+        passModal.classList.add('hidden');
+    });
+
+    passModal.addEventListener('click', (e) => {
+        if (e.target === passModal) {
+            passModal.classList.add('hidden');
+        }
+    });
+</script>
+
+{% endblock %}
