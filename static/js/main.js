@@ -170,8 +170,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    let currentRecipeData = null; // Track currently viewed recipe
+    const saveRecipeBtn = document.getElementById('save-recipe-btn');
+
     function openRecipeModal(recipe) {
+        currentRecipeData = recipe; // Store for saving
+
         modalRecipeTitle.innerText = recipe.name;
+
+        // Reset Save Button State
+        const saveIcon = saveRecipeBtn.querySelector('ion-icon');
+        saveIcon.setAttribute('name', 'bookmark-outline');
+        saveRecipeBtn.style.transform = 'scale(1)';
 
         // Handle Ingredients: Split by comma if it's a string to make a list
         modalRecipeIngredients.innerHTML = '';
@@ -186,5 +196,47 @@ document.addEventListener('DOMContentLoaded', () => {
         modalRecipeInstructions.innerText = recipe.instructions;
 
         recipeModal.classList.remove('hidden');
+    }
+
+    // Save Button Logic
+    if (saveRecipeBtn) {
+        saveRecipeBtn.addEventListener('click', async () => {
+            if (!window.userLoggedIn) {
+                // Not logged in -> Redirect logic
+                window.location.href = '/login';
+                return;
+            }
+
+            if (!currentRecipeData) return;
+
+            // Animate
+            const saveIcon = saveRecipeBtn.querySelector('ion-icon');
+            saveIcon.setAttribute('name', 'bookmark'); // Fill
+            saveRecipeBtn.style.transform = 'scale(1.2)';
+            setTimeout(() => saveRecipeBtn.style.transform = 'scale(1)', 200);
+
+            try {
+                const response = await fetch('/api/save_recipe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: currentRecipeData.name,
+                        ingredients: currentRecipeData.ingredients,
+                        instructions: currentRecipeData.instructions
+                    })
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    // Saved!
+                } else if (data.status === 'exists') {
+                    // Already saved
+                }
+            } catch (e) {
+                console.error("Save failed:", e);
+                // Revert icon if failed?
+                saveIcon.setAttribute('name', 'bookmark-outline');
+            }
+        });
     }
 });

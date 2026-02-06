@@ -3,3 +3,6 @@ pandas
 scikit-learn
 numpy
 requests
+flask-sqlalchemy
+flask-login
+deep-translator
