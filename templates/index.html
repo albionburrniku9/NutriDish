@@ -69,8 +69,8 @@
         card_instructions: "{{ t['card_instructions'] }}",
         btn_read_more: "{{ t['btn_read_more'] }}",
         val_empty: "{{ t['val_empty'] }}",
-        val_conflict_msg: {{ t['val_conflict_msg'] | tojson }},
-    err_generic: "{{ t['err_generic'] }}"
+        val_conflict_msg: '{{ t["val_conflict_msg"] | replace("\'", "\\\'") | safe }}',
+        err_generic: "{{ t['err_generic'] }}"
     };
 </script>
 
