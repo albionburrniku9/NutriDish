@@ -40,12 +40,12 @@ class RecipeRecommender:
                 self.df = pd.read_csv(self.data_file)
                 self._prepare_local_data()
                 self.use_api = False
-                print("✓ Local NLP Engine Loaded Successfully")
+                print("Success: Local NLP Engine Loaded Successfully")
             except Exception as e:
-                print(f"⚠ Error loading CSV: {e}. Falling back to API.")
+                print(f"Warning: Error loading CSV: {e}. Falling back to API.")
                 self.use_api = True
         else:
-            print("⚠ 'recipes.csv' not found. Using Web API fallback.")
+            print("Warning: 'recipes.csv' not found. Using Web API fallback.")
 
         # API Setup (Backup)
         self.api_base = "https://www.themealdb.com/api/json/v1/1/"
@@ -177,7 +177,8 @@ class RecipeRecommender:
                     "ingredients": t_ing,
                     "instructions": t_instr,
                     "score": recipe.get('score', ''),
-                    "id": recipe.get('id', '')
+                    "id": recipe.get('id', ''),
+                    "image": recipe.get('image', '')
                 })
             except Exception as e:
                 print(f"Translation Error for recipe {recipe['name']}: {e}")
@@ -238,7 +239,8 @@ class RecipeRecommender:
                     "name": details['strMeal'],
                     "ingredients": ingredients_str,
                     "instructions": details['strInstructions'],
-                    "score": "Web Match"
+                    "score": "Web Match",
+                    "image": details.get('strMealThumb', '')
                 })
         return final_recipes
 

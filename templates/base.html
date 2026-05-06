@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NutriDish - AI Recipe Assistant</title>
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Inter + Lora -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,600;1,600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <!-- Icons -->
@@ -25,15 +25,16 @@
     </div>
 
     <nav class="glass-nav">
-        <a href="{{ url_for('home') }}" class="logo" style="text-decoration: none; color: inherit;">NutriDish <span
-                class="ai-badge">AI</span></a>
+        <a href="{{ url_for('home') }}" class="logo" style="text-decoration: none; color: inherit;">
+            <span class="logo-icon">N</span>
+            NutriDish <span class="ai-badge">AI</span>
+        </a>
         <ul class="nav-links">
             <li><a href="{{ url_for('home') }}" class="active">{{ t['nav_home'] }}</a></li>
-            <li><a href="#">{{ t['nav_lab'] }} <span class="soon-badge">{{ t['nav_soon'] }}</span></a></li>
 
             {% if current_user.is_authenticated %}
             <li><a href="{{ url_for('profile') }}">{{ t['nav_profile'] }}</a></li>
-            <li><a href="{{ url_for('logout') }}" style="color: #ff6b6b;">{{ t['nav_logout'] }}</a></li>
+            <li><a href="{{ url_for('logout') }}" style="color: var(--safety-red);">{{ t['nav_logout'] }}</a></li>
             {% else %}
             <li><a href="{{ url_for('login') }}">{{ t['nav_login'] }}</a></li>
             {% endif %}
@@ -43,6 +44,11 @@
                     <option value="sq" {% if lang=='sq' %}selected{% endif %}>🇦🇱 SQ</option>
                     <option value="de" {% if lang=='de' %}selected{% endif %}>🇩🇪 DE</option>
                 </select>
+            </li>
+            <li>
+                <button class="dark-mode-toggle" id="dark-mode-btn" title="Toggle Dark Mode">
+                    <ion-icon name="moon-outline"></ion-icon>
+                </button>
             </li>
         </ul>
     </nav>
@@ -105,6 +111,31 @@
     <script>
         window.userLoggedIn = "{{ 'true' if current_user.is_authenticated else 'false' }}" === "true";
     </script>
+    
+    <!-- Dark Mode Toggle Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const darkModeBtn = document.getElementById('dark-mode-btn');
+            const body = document.body;
+            
+            // Check for saved preference
+            const savedMode = localStorage.getItem('darkMode');
+            if (savedMode === 'true') {
+                body.classList.add('dark-mode');
+                darkModeBtn.innerHTML = '<ion-icon name="sunny-outline"></ion-icon>';
+            }
+            
+            darkModeBtn.addEventListener('click', () => {
+                body.classList.toggle('dark-mode');
+                const isDark = body.classList.contains('dark-mode');
+                localStorage.setItem('darkMode', isDark);
+                darkModeBtn.innerHTML = isDark 
+                    ? '<ion-icon name="sunny-outline"></ion-icon>' 
+                    : '<ion-icon name="moon-outline"></ion-icon>';
+            });
+        });
+    </script>
+    
     <script src="{{ url_for('static', filename='js/main.js') }}?v=3"></script>
 </body>
 

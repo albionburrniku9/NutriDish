@@ -151,7 +151,8 @@ def profile():
             'name': r.recipe_name,
             'ingredients': r.recipe_ingredients,
             'instructions': r.recipe_instructions,
-            'id': r.id
+            'id': r.id,
+            'image': r.image_url
         })
     
     print(f"DEBUG: Before translation - {len(recipes)} recipes")
@@ -178,6 +179,7 @@ def save_recipe():
     name = data.get('name')
     ingredients = data.get('ingredients')
     instructions = data.get('instructions')
+    image_url = data.get('image')
     
     # Get current language
     lang = request.cookies.get('lang', 'en')
@@ -192,6 +194,12 @@ def save_recipe():
         except Exception as e:
             print(f"Error translating to English before save: {e}")
     
+    # Check limit BEFORE checking if already saved (optional, but good practice)
+    if not current_user.is_pro:
+        saved_count = SavedRecipe.query.filter_by(user_id=current_user.id).count()
+        if saved_count >= 3:
+            return jsonify({'status': 'error', 'message': 'limit_reached', 'detail': 'You can only save up to 3 recipes on the free plan.'})
+
     # Check if already saved
     existing = SavedRecipe.query.filter_by(user_id=current_user.id, recipe_name=name).first()
     if existing:
@@ -201,7 +209,8 @@ def save_recipe():
         user_id=current_user.id,
         recipe_name=name,
         recipe_ingredients=ingredients,
-        recipe_instructions=instructions
+        recipe_instructions=instructions,
+        image_url=image_url
     )
     db.session.add(new_save)
     db.session.commit()
@@ -220,6 +229,15 @@ def set_language(lang_code):
 @app.route('/api/recommend', methods=['POST'])
 def recommend():
     try:
+        # Enforce Login
+        if not current_user.is_authenticated:
+            return jsonify({'status': 'error', 'message': 'login_required'}), 403
+            
+        # Optional: We could limit generations, but requirements state limits on SAVING recipes.
+        # Removing generation limit to allow users to freely search/generate.
+        # if not current_user.is_pro and current_user.generations_used >= 3:
+        #     return jsonify({'status': 'error', 'message': 'limit_reached'}), 403
+            
         data = request.json
         ingredients = data.get('ingredients', '')
         restriction = data.get('restriction', '')
@@ -229,10 +247,98 @@ def recommend():
         
         result = recommender.recommend(ingredients, restriction, lang=lang)
         
+        # Increment usage if successful
+        if result.get('status') == 'success':
+            current_user.generations_used += 1
+            db.session.commit()
+            
         return jsonify(result)
     except Exception as e:
         print(f"Server Error: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+import stripe
+
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', 'sk_test_1234567890') # Replace with actual test key
+DOMAIN = 'http://localhost:5000' # Update based on environment
+
+@app.route('/create-checkout-session', methods=['POST'])
+@login_required
+def create_checkout_session():
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[
+                {
+                    'price_data': {
+                        'currency': 'usd',
+                        'unit_amount': 900, # $9.00
+                        'product_data': {
+                            'name': 'NutriDish Pro Unlimited',
+                            'description': 'Unlock unlimited recipe saves forever.',
+                        },
+                    },
+                    'quantity': 1,
+                },
+            ],
+            mode='payment',
+            success_url=DOMAIN + '/upgrade?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=DOMAIN + '/upgrade',
+            client_reference_id=str(current_user.id)
+        )
+        return jsonify({'id': checkout_session.id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 403
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Stripe-Signature')
+    endpoint_secret = os.environ.get('STRIPE_WEBHOOK_SECRET', '') # Set your webhook secret
+    
+    event = None
+    
+    try:
+        if endpoint_secret:
+            event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+        else:
+            # Fallback for dev if no secret configured
+            import json
+            event = json.loads(payload)
+    except ValueError as e:
+        return 'Invalid payload', 400
+    except stripe.error.SignatureVerificationError as e:
+        return 'Invalid signature', 400
+        
+    # Handle the checkout.session.completed event
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        user_id = session.get('client_reference_id')
+        if user_id:
+            user = User.query.get(int(user_id))
+            if user:
+                user.is_pro = True
+                db.session.commit()
+                print(f"User {user.username} upgraded to Pro via Webhook!")
+
+    return 'Success', 200
+
+@app.route('/upgrade', methods=['GET', 'POST'])
+@login_required
+def upgrade():
+    # If returned from Stripe checkout with success
+    session_id = request.args.get('session_id')
+    if session_id:
+        current_user.is_pro = True
+        db.session.commit()
+        flash(get_t().get('flash_upgraded', 'Successfully upgraded to Pro!'))
+        return redirect(url_for('profile'))
+        
+    return render_template('upgrade.html')
+
+@app.route('/react')
+def react_app():
+    return render_template('react_app.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

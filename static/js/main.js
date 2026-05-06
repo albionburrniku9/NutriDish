@@ -100,6 +100,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (data.status === 'ok') {
                     // SUCCESS
                     displayResults(data.data);
+                } else if (data.status === 'error') {
+                    if (data.message === 'login_required') {
+                        alert(window.langData.err_login_required || "You must be logged in.");
+                        window.location.href = '/login';
+                    } else if (data.message === 'limit_reached') {
+                        warningMessage.innerHTML = (window.langData.err_limit_reached || "Limit reached.") + '<br><br><a href="/upgrade" class="glow-button" style="text-decoration:none; display:inline-block; margin-top:10px;">' + (window.langData.btn_upgrade || "Upgrade") + '</a>';
+                        warningModal.classList.remove('hidden');
+                    } else {
+                        alert(data.message);
+                    }
                 } else {
                     // Error or unknown state
                     console.error("Unknown Server Status:", data);
@@ -128,34 +138,54 @@ document.addEventListener('DOMContentLoaded', () => {
         recipes.forEach((recipe, index) => {
             const card = document.createElement('div');
             card.className = 'recipe-card';
-            card.style.animationDelay = `${index * 100}ms`; // Stagger animation
+            card.style.animationDelay = `${index * 100}ms`;
 
-            // Truncate instruction for preview
-            const previewText = recipe.instructions.length > 100
-                ? recipe.instructions.substring(0, 100) + '...'
-                : recipe.instructions;
+            // Generate Safety Badges based on restrictions
+            const restriction = document.getElementById('restriction-input').value;
+            let badgesHTML = '';
+            
+            if (restriction === 'Lactose Intolerant') {
+                badgesHTML += `<span class="safety-badge no-lactose"><ion-icon name="water-outline"></ion-icon> No Lactose</span>`;
+            }
+            if (restriction === 'Gluten Free') {
+                badgesHTML += `<span class="safety-badge no-gluten"><ion-icon name="shield-checkmark-outline"></ion-icon> Gluten Free</span>`;
+            }
+            if (restriction === 'Vegan') {
+                badgesHTML += `<span class="safety-badge vegan"><ion-icon name="leaf-outline"></ion-icon> Vegan</span>`;
+            }
+            if (restriction === 'Nut Free') {
+                badgesHTML += `<span class="safety-badge no-soy"><ion-icon name="alert-circle-outline"></ion-icon> Nut Free</span>`;
+            }
 
-            // Truncate ingredients for preview
-            const allIngredients = recipe.ingredients.split(',').map(i => i.trim());
-            const previewIngredients = allIngredients.length > 6
-                ? allIngredients.slice(0, 6).join(', ') + '...'
-                : recipe.ingredients;
+            // Generate description from instructions
+            let descriptionPreview = recipe.instructions.split('.')[0] + '.';
+            if(descriptionPreview.length < 20 && recipe.instructions.split('.').length > 1) {
+                descriptionPreview += ' ' + recipe.instructions.split('.')[1] + '.';
+            }
+            if(descriptionPreview.length > 150) {
+                descriptionPreview = descriptionPreview.substring(0, 150) + '...';
+            }
+
+            // Fallback image if API doesn't provide one
+            const recipeImage = recipe.image || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=800';
 
             card.innerHTML = `
-                <div class="card-header">
-                    <h3>${recipe.name}</h3>
-                    <span class="match-score">${recipe.score}</span>
+                <img src="${recipeImage}" alt="${recipe.name}" style="width: 100%; height: 200px; object-fit: cover; border-radius: var(--radius-lg) var(--radius-lg) 0 0; display: block;">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;">
+                    <div style="flex: 1;">
+                        ${badgesHTML ? `<div class="safety-badges">${badgesHTML}</div>` : ''}
+                        <h3>${recipe.name}</h3>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <h4>${window.langData.card_ingredients}</h4>
-                    <p>${previewIngredients}</p>
-                    
-                    <h4>${window.langData.card_instructions}</h4>
-                    <p>${previewText}</p>
+                <div class="card-body" style="flex: 1;">
+                    <p style="color: #9ca3af; line-height: 1.6; font-size: 0.95rem;">${descriptionPreview}</p>
                 </div>
-                <div class="card-footer">
-                    <button class="read-more-btn">
-                        ${window.langData.btn_read_more} <ion-icon name="arrow-forward-outline"></ion-icon>
+                <div class="card-footer" style="display: flex; gap: 0.5rem; flex-wrap: nowrap; margin-top: auto;">
+                    <button class="grocery-list-btn" data-ingredients="${recipe.ingredients}" style="flex: 1; padding: 0.5rem; border-radius: 6px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem;">
+                        <ion-icon name="cart-outline"></ion-icon> Grocery
+                    </button>
+                    <button class="read-more-btn" style="flex: 1; padding: 0.5rem; border-radius: 6px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem;">
+                        Read More <ion-icon name="arrow-forward-outline"></ion-icon>
                     </button>
                 </div>
             `;
@@ -166,7 +196,79 @@ document.addEventListener('DOMContentLoaded', () => {
                 openRecipeModal(recipe);
             });
 
+            // Add grocery list functionality
+            const groceryBtn = card.querySelector('.grocery-list-btn');
+            groceryBtn.addEventListener('click', (e) => {
+                const ingredients = e.currentTarget.dataset.ingredients;
+                exportGroceryList(ingredients);
+            });
+
             resultsSection.appendChild(card);
+        });
+    }
+
+    let currentGroceryIngredients = '';
+
+    // Grocery List Export - Digital Receipt Style inside App
+    function exportGroceryList(ingredients) {
+        currentGroceryIngredients = ingredients;
+        const ingredientList = ingredients.split(',').map(i => i.trim());
+        
+        const listItemsContainer = document.getElementById('grocery-list-items');
+        if(!listItemsContainer) return;
+        
+        listItemsContainer.innerHTML = '';
+        
+        ingredientList.forEach(ing => {
+            const li = document.createElement('li');
+            li.style.cssText = 'padding: 0.75rem 0; border-bottom: 1px dashed rgba(255,255,255,0.1); color: #e5e7eb; display: flex; align-items: center; gap: 10px;';
+            li.innerHTML = `<input type="checkbox" style="accent-color: #8FA98B; width: 18px; height: 18px;"> <span>${ing}</span>`;
+            listItemsContainer.appendChild(li);
+        });
+
+        const groceryModal = document.getElementById('grocery-modal');
+        if(groceryModal) {
+            groceryModal.classList.remove('hidden');
+        }
+    }
+
+    // Share & Download Buttons Logic
+    const shareBtn = document.getElementById('share-grocery-btn');
+    const downloadBtn = document.getElementById('download-grocery-btn');
+
+    if(shareBtn) {
+        shareBtn.addEventListener('click', async () => {
+            const textToShare = "🛒 Grocery List from NutriDish AI:\n\n" + currentGroceryIngredients.split(',').map(i => "- " + i.trim()).join('\n');
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'NutriDish Grocery List',
+                        text: textToShare,
+                    });
+                } catch (err) {
+                    console.log('Error sharing:', err);
+                }
+            } else {
+                // Fallback to clipboard
+                navigator.clipboard.writeText(textToShare).then(() => {
+                    alert('Grocery list copied to clipboard!');
+                });
+            }
+        });
+    }
+
+    if(downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+            const textToSave = "🛒 Grocery List from NutriDish AI:\n\n" + currentGroceryIngredients.split(',').map(i => "- " + i.trim()).join('\n');
+            const blob = new Blob([textToSave], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'nutridish-grocery-list.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         });
     }
 
@@ -177,6 +279,16 @@ document.addEventListener('DOMContentLoaded', () => {
         currentRecipeData = recipe; // Store for saving
 
         modalRecipeTitle.innerText = recipe.name;
+        
+        // ETM Layout Updates
+        const modalBreadcrumb = document.getElementById('modal-breadcrumb-name');
+        if(modalBreadcrumb) modalBreadcrumb.innerText = recipe.name;
+        
+        const modalImage = document.getElementById('modal-recipe-image');
+        if(modalImage) {
+            modalImage.src = recipe.image || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=800';
+            modalImage.alt = recipe.name;
+        }
 
         // Reset Save Button State
         const saveIcon = saveRecipeBtn.querySelector('ion-icon');
@@ -222,7 +334,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({
                         name: currentRecipeData.name,
                         ingredients: currentRecipeData.ingredients,
-                        instructions: currentRecipeData.instructions
+                        instructions: currentRecipeData.instructions,
+                        image: currentRecipeData.image
                     })
                 });
 

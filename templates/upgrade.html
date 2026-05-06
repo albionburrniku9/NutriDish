@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}NutriDish Pro - Upgrade{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-box glass-panel" style="max-width: 520px; text-align: center; margin: 2rem auto;">
+        <div class="pro-badge" style="display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #8FA98B 0%, #6B8067 100%); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1.5rem;">
+            <ion-icon name="star"></ion-icon> NutriDish Pro
+        </div>
+        
+        <h2 style="font-size: 2rem; margin-bottom: 0.75rem;">Unlock Unlimited AI Meals</h2>
+        <p style="margin-bottom: 2rem; color: var(--text-secondary); line-height: 1.6;">Get precision macro tracking, advanced allergen exclusions, and smart grocery lists.</p>
+        
+        <!-- Features List -->
+        <div class="pro-features" style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; text-align: left;">
+            <ul style="list-style-type: none; padding: 0; margin: 0;">
+                <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 0.75rem;"><ion-icon name="checkmark-circle" style="color: var(--sage-green); font-size: 1.25rem;"></ion-icon> <span><strong>Unlimited</strong> AI Generations</span></li>
+                <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 0.75rem;"><ion-icon name="checkmark-circle" style="color: var(--sage-green); font-size: 1.25rem;"></ion-icon> <span>Precision <strong>Macro Tracking</strong></span></li>
+                <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 0.75rem;"><ion-icon name="checkmark-circle" style="color: var(--sage-green); font-size: 1.25rem;"></ion-icon> <span>Advanced <strong>Allergen Exclusions</strong></span></li>
+                <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 0.75rem;"><ion-icon name="checkmark-circle" style="color: var(--sage-green); font-size: 1.25rem;"></ion-icon> <span>Smart <strong>Grocery Lists</strong></span></li>
+                <li style="margin-bottom: 0; display: flex; align-items: center; gap: 0.75rem;"><ion-icon name="checkmark-circle" style="color: var(--sage-green); font-size: 1.25rem;"></ion-icon> <span><strong>Unlimited</strong> Saved Recipes</span></li>
+            </ul>
+        </div>
+        
+        <!-- Pricing -->
+        <div style="margin-bottom: 2rem;">
+            <span style="font-size: 2.5rem; font-weight: 700; color: var(--text-primary);">$9</span>
+            <span style="font-size: 1rem; color: var(--text-muted);">/month</span>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">Cancel anytime</div>
+        </div>
+        
+        <!-- Payment Methods -->
+        <div class="payment-section">
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Secure payment via Stripe</p>
+            
+            <!-- Payment Method Tabs -->
+            <div class="payment-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; background: var(--bg-secondary); padding: 0.35rem; border-radius: 10px;">
+                <button type="button" class="payment-tab active" data-method="card" style="flex: 1; padding: 0.75rem; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--text-primary); display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.3s;">
+                    <ion-icon name="card-outline"></ion-icon> Card
+                </button>
+                <button type="button" class="payment-tab" data-method="paypal" style="flex: 1; padding: 0.75rem; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.3s;">
+                    <ion-icon name="wallet-outline"></ion-icon> PayPal
+                </button>
+                <button type="button" class="payment-tab" data-method="apple" style="flex: 1; padding: 0.75rem; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.3s;">
+                    <ion-icon name="logo-apple"></ion-icon> Apple
+                </button>
+            </div>
+            
+            <!-- Card Payment Form -->
+            <div class="payment-form active" id="payment-card">
+                <div class="card-input-group" style="margin-bottom: 1rem; text-align: left;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem;">Card Number</label>
+                    <input type="text" placeholder="1234 5678 9012 3456" maxlength="19" style="width: 100%; padding: 0.875rem 1rem; border: 1px solid var(--glass-border); border-radius: var(--radius-md); font-size: 1rem; background: var(--bg-secondary); color: var(--text-primary);">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div class="card-input-group" style="text-align: left;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem;">Expiry</label>
+                        <input type="text" placeholder="MM/YY" maxlength="5" style="width: 100%; padding: 0.875rem 1rem; border: 1px solid var(--glass-border); border-radius: var(--radius-md); font-size: 1rem; background: var(--bg-secondary); color: var(--text-primary);">
+                    </div>
+                    <div class="card-input-group" style="text-align: left;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem;">CVC</label>
+                        <input type="text" placeholder="123" maxlength="4" style="width: 100%; padding: 0.875rem 1rem; border: 1px solid var(--glass-border); border-radius: var(--radius-md); font-size: 1rem; background: var(--bg-secondary); color: var(--text-primary);">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PayPal (Placeholder) -->
+            <div class="payment-form" id="payment-paypal" style="display: none;">
+                <div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
+                    <ion-icon name="wallet-outline" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></ion-icon>
+                    <p>You will be redirected to PayPal to complete payment.</p>
+                </div>
+            </div>
+            
+            <!-- Apple Pay (Placeholder) -->
+            <div class="payment-form" id="payment-apple" style="display: none;">
+                <div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
+                    <ion-icon name="logo-apple" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></ion-icon>
+                    <p>Apple Pay will authenticate on your device.</p>
+                </div>
+            </div>
+        </div>
+        
+        <button id="checkout-button" class="glow-button" style="width: 100%; margin-bottom: 1rem;">
+            <span class="btn-text">Pay $9 Once & Unlock Forever</span>
+            <ion-icon name="lock-closed-outline"></ion-icon>
+        </button>
+        
+        <!-- Trust Badges -->
+        <div style="display: flex; justify-content: center; gap: 1.5rem; margin-top: 1.5rem; color: var(--text-muted); font-size: 0.75rem;">
+            <span style="display: flex; align-items: center; gap: 0.35rem;"><ion-icon name="shield-checkmark-outline"></ion-icon> Secure</span>
+            <span style="display: flex; align-items: center; gap: 0.35rem;"><ion-icon name="refresh-outline"></ion-icon> Cancel anytime</span>
+            <span style="display: flex; align-items: center; gap: 0.35rem;"><ion-icon name="receipt-outline"></ion-icon> Invoice</span>
+        </div>
+        
+        <small style="display: block; margin-top: 1.5rem; color: var(--text-muted); font-size: 0.75rem;">*Simulated checkout. No real charges will be made.</small>
+    </div>
+</div>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const tabs = document.querySelectorAll('.payment-tab');
+    const forms = document.querySelectorAll('.payment-form');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => {
+                t.classList.remove('active');
+                t.style.color = 'var(--text-muted)';
+            });
+            tab.classList.add('active');
+            tab.style.color = 'var(--text-primary)';
+            
+            const method = tab.dataset.method;
+            forms.forEach(form => {
+                form.style.display = 'none';
+                form.classList.remove('active');
+            });
+            const activeForm = document.getElementById('payment-' + method);
+            if (activeForm) {
+                activeForm.style.display = 'block';
+                activeForm.classList.add('active');
+            }
+        });
+    });
+
+    const checkoutButton = document.getElementById('checkout-button');
+    // NOTE: Replace with your actual Stripe publishable key
+    const stripe = Stripe('pk_test_1234567890'); 
+    
+    checkoutButton.addEventListener('click', function () {
+        checkoutButton.disabled = true;
+        checkoutButton.querySelector('.btn-text').innerText = 'Redirecting to secure checkout...';
+        
+        fetch('/create-checkout-session', {
+            method: 'POST',
+        })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(session) {
+            if (session.error) {
+                alert(session.error);
+                checkoutButton.disabled = false;
+                checkoutButton.querySelector('.btn-text').innerText = 'Pay $9 Once & Unlock Forever';
+            } else {
+                return stripe.redirectToCheckout({ sessionId: session.id });
+            }
+        })
+        .then(function(result) {
+            if (result && result.error) {
+                alert(result.error.message);
+                checkoutButton.disabled = false;
+                checkoutButton.querySelector('.btn-text').innerText = 'Pay $9 Once & Unlock Forever';
+            }
+        })
+        .catch(function(error) {
+            console.error('Error:', error);
+            checkoutButton.disabled = false;
+            checkoutButton.querySelector('.btn-text').innerText = 'Pay $9 Once & Unlock Forever';
+        });
+    });
+});
+</script>
+
+<style>
+.payment-tab.active {
+    background: var(--card-bg) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

@@ -5,9 +5,9 @@ translations = {
         'nav_lab': 'Lab Tests',
         'nav_profile': 'Profile',
         'nav_soon': 'Coming Soon',
-        'hero_title_1': 'Cook Smarter with',
-        'hero_title_2': 'What You Have',
-        'hero_desc': 'Personalized AI recipe recommendations based on your pantry and unique dietary needs.',
+        'hero_title_1': 'Eat Without Fear.',
+        'hero_title_2': 'AI Meals for Strict Diets.',
+        'hero_desc': "Stop wasting hours reading food labels or eating the same three safe meals. NutriDish uses advanced AI to instantly generate delicious, 100% safe recipes based on what's already in your fridge.",
         'lbl_restrictions': 'Dietary Restrictions',
         'opt_select': 'Select a restriction...',
         'opt_none': 'None',
@@ -72,7 +72,10 @@ translations = {
         'profile_cancel_btn': 'Cancel',
         'flash_pass_changed': 'Password changed successfully!',
         'flash_pass_wrong': 'Current password is incorrect.',
-        'flash_pass_mismatch': 'New passwords do not match.'
+        'flash_pass_mismatch': 'New passwords do not match.',
+        'err_login_required': 'You must be logged in to generate recipes.',
+        'err_limit_reached': 'You have reached your free limit of 3 meals. Please upgrade to Pro for unlimited AI generations.',
+        'btn_upgrade': 'Upgrade to Pro'
     },
     'sq': {
         'nav_home': 'Ballina',
@@ -146,7 +149,10 @@ translations = {
         'profile_cancel_btn': 'Anulo',
         'flash_pass_changed': 'Fjalëkalimi u ndryshua me sukses!',
         'flash_pass_wrong': 'Fjalëkalimi aktual është i pasaktë.',
-        'flash_pass_mismatch': 'Fjalëkalimet e reja nuk përputhen.'
+        'flash_pass_mismatch': 'Fjalëkalimet e reja nuk përputhen.',
+        'err_login_required': 'Duhet të jeni të kyçur për të gjeneruar receta.',
+        'err_limit_reached': 'Keni arritur kufirin tuaj falas prej 3 vaktesh. Ju lutemi përmirësoni në Pro për gjenerime të pakufizuara.',
+        'btn_upgrade': 'Përmirëso në Pro'
     },
     'de': {
         'nav_home': 'Startseite',
@@ -220,6 +226,9 @@ translations = {
         'profile_cancel_btn': 'Abbrechen',
         'flash_pass_changed': 'Passwort erfolgreich geändert!',
         'flash_pass_wrong': 'Aktuelles Passwort ist falsch.',
-        'flash_pass_mismatch': 'Neue Passwörter stimmen nicht überein.'
+        'flash_pass_mismatch': 'Neue Passwörter stimmen nicht überein.',
+        'err_login_required': 'Sie müssen angemeldet sein, um Rezepte zu generieren.',
+        'err_limit_reached': 'Sie haben Ihr kostenloses Limit von 3 Mahlzeiten erreicht. Bitte upgraden Sie auf Pro für unbegrenzte KI-Generierungen.',
+        'btn_upgrade': 'Auf Pro upgraden'
     }
 }
