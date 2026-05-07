@@ -162,31 +162,37 @@ document.addEventListener('DOMContentLoaded', () => {
             if(descriptionPreview.length < 20 && recipe.instructions.split('.').length > 1) {
                 descriptionPreview += ' ' + recipe.instructions.split('.')[1] + '.';
             }
-            if(descriptionPreview.length > 150) {
-                descriptionPreview = descriptionPreview.substring(0, 150) + '...';
+            if(descriptionPreview.length > 120) {
+                descriptionPreview = descriptionPreview.substring(0, 120) + '...';
             }
 
             // Fallback image if API doesn't provide one
             const recipeImage = recipe.image || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=800';
 
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+
             card.innerHTML = `
-                <img src="${recipeImage}" alt="${recipe.name}" style="width: 100%; height: 200px; object-fit: cover; border-radius: var(--radius-lg) var(--radius-lg) 0 0; display: block;">
-                <div class="card-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;">
-                    <div style="flex: 1;">
-                        ${badgesHTML ? `<div class="safety-badges">${badgesHTML}</div>` : ''}
-                        <h3>${recipe.name}</h3>
+                <div style="position: relative;">
+                    <img src="${recipeImage}" alt="${recipe.name}" style="width: 100%; height: 220px; object-fit: cover; display: block;">
+                    <div style="position: absolute; top: 10px; right: 10px; background: var(--card-bg); width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <ion-icon name="restaurant-outline" style="color: var(--sage-green); font-size: 1.2rem;"></ion-icon>
                     </div>
                 </div>
-                <div class="card-body" style="flex: 1;">
-                    <p style="color: #9ca3af; line-height: 1.6; font-size: 0.95rem;">${descriptionPreview}</p>
-                </div>
-                <div class="card-footer" style="display: flex; gap: 0.5rem; flex-wrap: nowrap; margin-top: auto;">
-                    <button class="grocery-list-btn" data-ingredients="${recipe.ingredients}" style="flex: 1; padding: 0.5rem; border-radius: 6px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem;">
-                        <ion-icon name="cart-outline"></ion-icon> Grocery
-                    </button>
-                    <button class="read-more-btn" style="flex: 1; padding: 0.5rem; border-radius: 6px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem;">
-                        Read More <ion-icon name="arrow-forward-outline"></ion-icon>
-                    </button>
+                <div class="card-body" style="padding: 1.5rem; flex: 1; display: flex; flex-direction: column;">
+                    <h3 style="font-family: var(--font-heading); font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem; line-height: 1.3;">${recipe.name}</h3>
+                    <p style="color: #9ca3af; line-height: 1.5; font-size: 0.95rem; margin-bottom: 1rem; flex: 1;">${descriptionPreview}</p>
+                    
+                    ${badgesHTML ? `<div class="safety-badges" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;">${badgesHTML}</div>` : ''}
+                    
+                    <div class="card-footer" style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: auto;">
+                        <button class="read-more-btn" style="width: 100%; padding: 0.75rem; background: var(--sage-green); color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                            Read More <ion-icon name="arrow-forward-outline"></ion-icon>
+                        </button>
+                        <button class="grocery-list-btn" data-ingredients="${recipe.ingredients}" style="width: 100%; padding: 0.75rem; background: transparent; color: var(--text-primary); border: 1px solid var(--glass-border); border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                            Grocery List <ion-icon name="cart-outline"></ion-icon>
+                        </button>
+                    </div>
                 </div>
             `;
 
