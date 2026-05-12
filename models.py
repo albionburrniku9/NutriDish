@@ -14,6 +14,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(200), nullable=False)
     is_pro = db.Column(db.Boolean, default=False)
     generations_used = db.Column(db.Integer, default=0)
+    profile_image = db.Column(db.Text, nullable=True)
     saved_recipes = db.relationship('SavedRecipe', backref='user', lazy=True)
     dietary_profile = db.relationship('DietaryProfile', backref='user', uselist=False, lazy=True)
 

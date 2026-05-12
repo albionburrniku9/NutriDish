@@ -93,8 +93,8 @@ def signup():
             new_user.set_password(password)
             db.session.add(new_user)
             db.session.commit()
-            login_user(new_user)
-            return redirect(url_for('home'))
+            flash("Llogaria u krijua me sukses! Ju lutemi kyçuni.", "success")
+            return redirect(url_for('login'))
             
     return render_template('signup.html')
 
@@ -132,9 +132,9 @@ def change_password():
     flash(get_t().get('flash_pass_changed'))
     return redirect(url_for('profile'))
 
-@app.route('/profile')
+@app.route('/saved')
 @login_required
-def profile():
+def saved():
     saved_refs = current_user.saved_recipes
     
     # Check language
@@ -168,7 +168,31 @@ def profile():
             import traceback
             traceback.print_exc()
             
-    return render_template('profile.html', recipes=recipes)
+    return render_template('saved_recipes.html', recipes=recipes)
+
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template('profile.html')
+
+@app.route('/api/update_profile_image', methods=['POST'])
+@login_required
+def update_profile_image():
+    try:
+        data = request.json
+        image_data = data.get('image')
+        
+        # If image_data is empty string or None, we set to None (remove image)
+        if not image_data:
+            current_user.profile_image = None
+        else:
+            current_user.profile_image = image_data
+            
+        db.session.commit()
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        print(f"Error updating profile image: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/save_recipe', methods=['POST'])
 @login_required

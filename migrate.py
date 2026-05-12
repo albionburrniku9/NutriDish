@@ -18,6 +18,13 @@ def migrate():
     except sqlite3.OperationalError as e:
         print(f"Error adding generations_used (might already exist): {e}")
 
+    try:
+        # Add profile_image column
+        cursor.execute('ALTER TABLE user ADD COLUMN profile_image TEXT')
+        print("Added profile_image column.")
+    except sqlite3.OperationalError as e:
+        print(f"Error adding profile_image (might already exist): {e}")
+
     conn.commit()
     conn.close()
     print("Migration complete.")

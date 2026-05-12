@@ -1,163 +1,663 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<!-- User Info Bar -->
-<div class="profile-user-bar"
-    style="max-width: 1200px; margin: 10px auto 0; padding: 0 1rem; display: flex; justify-content: space-between; align-items: center;">
-    <div style="display: flex; align-items: center; gap: 1rem;">
-        <div
-            style="width: 50px; height: 50px; background: linear-gradient(135deg, #FF6B6B, #d83bd2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; color: white;">
-            {{ current_user.first_name[0] | upper }}{{ current_user.last_name[0] | upper }}
+<style>
+    /* SaaS Dashboard specific styles */
+    .dashboard-container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        padding: 0 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .saas-card {
+        background: var(--card-bg, #ffffff);
+        border: 1px solid var(--glass-border, rgba(0,0,0,0.05));
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    body.dark-mode .saas-card {
+        background: #1e1e24;
+        border-color: rgba(255,255,255,0.05);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    /* 1. Header & Avatar */
+    .profile-header {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .avatar-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .avatar-lg {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--sage-green, #8FA98B), var(--sage-dark, #5F7A5D));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: white;
+        box-shadow: 0 8px 20px rgba(143, 169, 139, 0.25);
+        object-fit: cover;
+        border: 3px solid var(--card-bg, #ffffff);
+    }
+    
+    body.dark-mode .avatar-lg {
+        border-color: #1e1e24;
+    }
+
+    .avatar-edit-btn {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background: var(--sage-green, #8FA98B);
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--card-bg, #ffffff);
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        transition: transform 0.2s, background 0.2s;
+    }
+    
+    body.dark-mode .avatar-edit-btn {
+        border-color: #1e1e24;
+    }
+
+    .avatar-edit-btn:hover {
+        transform: scale(1.1);
+        filter: brightness(1.1);
+    }
+
+    /* Loading overlay for avatar */
+    .avatar-loading-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+    }
+    .avatar-wrapper.loading .avatar-loading-overlay {
+        opacity: 1;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    .spinner-icon {
+        animation: spin 1s linear infinite;
+    }
+
+    .pro-badge {
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        color: #000;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 12px;
+        margin-left: 0.5rem;
+        vertical-align: middle;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Minimal dropdown for image actions */
+    .image-actions-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: 0.5rem;
+        background: var(--card-bg, #ffffff);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        padding: 0.5rem;
+        z-index: 50;
+        min-width: 160px;
+        display: none;
+    }
+    body.dark-mode .image-actions-menu {
+        background: #2a2a32;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+    .image-actions-menu.show {
+        display: block;
+        animation: fadeIn 0.2s ease-out;
+    }
+    .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: background 0.2s;
+        border: none;
+        background: transparent;
+        width: 100%;
+        text-align: left;
+    }
+    .menu-item:hover {
+        background: rgba(143, 169, 139, 0.1);
+        color: var(--sage-green);
+    }
+    .menu-item.danger:hover {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+
+    /* Toast notification */
+    .profile-toast {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        background: var(--card-bg, #ffffff);
+        border-left: 4px solid var(--sage-green);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        z-index: 1000;
+        transform: translateY(100px);
+        opacity: 0;
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+    }
+    body.dark-mode .profile-toast {
+        background: #2a2a32;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    .profile-toast.show {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    .profile-toast.error {
+        border-left-color: #ef4444;
+    }
+
+    /* 2. Subscription Card */
+    .sub-card {
+        background: linear-gradient(135deg, rgba(143,169,139,0.1), rgba(143,169,139,0.05));
+        border: 1px solid rgba(143,169,139,0.2);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+    
+    body.dark-mode .sub-card {
+        background: linear-gradient(135deg, rgba(143,169,139,0.15), rgba(143,169,139,0.05));
+    }
+
+    .progress-bar-bg {
+        width: 100%;
+        height: 8px;
+        background: rgba(0,0,0,0.1);
+        border-radius: 4px;
+        margin-top: 1rem;
+        overflow: hidden;
+    }
+    
+    body.dark-mode .progress-bar-bg {
+        background: rgba(255,255,255,0.1);
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--sage-green, #8FA98B);
+        border-radius: 4px;
+        transition: width 0.5s ease-out;
+    }
+
+    .btn-premium {
+        background: var(--sage-green, #8FA98B);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-premium:hover {
+        filter: brightness(1.1);
+        transform: translateY(-2px);
+    }
+
+    /* 3. Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+    .stat-box {
+        padding: 1.5rem;
+        background: rgba(0,0,0,0.02);
+        border-radius: 12px;
+        text-align: center;
+    }
+    body.dark-mode .stat-box {
+        background: rgba(255,255,255,0.02);
+    }
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        font-family: var(--font-heading);
+        margin-bottom: 0.25rem;
+    }
+    .stat-label {
+        font-size: 0.85rem;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+
+    /* 4. Preferences & Settings */
+    .settings-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    .setting-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--glass-border);
+        gap: 1rem;
+    }
+    .setting-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+    .setting-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .setting-info h4 {
+        font-size: 1.1rem;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+    .setting-info p {
+        font-size: 0.9rem;
+        color: #9ca3af;
+    }
+
+    /* Modern Toggle Switch */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 28px;
+        flex-shrink: 0;
+    }
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 34px;
+    }
+    body.dark-mode .slider {
+        background-color: #4b5563;
+    }
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    input:checked + .slider {
+        background-color: var(--sage-green);
+    }
+    input:checked + .slider:before {
+        transform: translateX(22px);
+    }
+
+    .btn-danger {
+        background: transparent;
+        color: #ef4444;
+        border: 1px solid #ef4444;
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-danger:hover {
+        background: #ef4444;
+        color: white;
+    }
+    
+    .btn-outline {
+        background: transparent;
+        color: var(--text-primary);
+        border: 1px solid var(--glass-border);
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-outline:hover {
+        background: rgba(143, 169, 139, 0.1);
+        color: var(--sage-green);
+        border-color: var(--sage-green);
+    }
+    body.dark-mode .btn-outline:hover {
+        background: rgba(143, 169, 139, 0.15);
+    }
+
+    /* Olive Green buttons signature override */
+    .btn-olive {
+        background: var(--sage-green, #8FA98B);
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-olive:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+    }
+
+    h2.section-title {
+        font-family: var(--font-heading);
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        color: var(--text-primary);
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div class="dashboard-container">
+    
+    <!-- 1. Profile Header -->
+    <div class="profile-header">
+        <div class="avatar-wrapper" id="profile-avatar-wrapper">
+            {% if current_user.profile_image %}
+                <img src="{{ current_user.profile_image }}" alt="Profile Image" class="avatar-lg" id="avatar-image-display">
+            {% else %}
+                <div class="avatar-lg" id="avatar-initials-display">
+                    {{ current_user.first_name[0] | upper }}{{ current_user.last_name[0] | upper }}
+                </div>
+            {% endif %}
+            
+            <button class="avatar-edit-btn" id="avatar-edit-trigger" title="Edit Profile Image">
+                <ion-icon name="camera-outline"></ion-icon>
+            </button>
+
+            <!-- Loading Spinner Overlay -->
+            <div class="avatar-loading-overlay">
+                <ion-icon name="reload-outline" class="spinner-icon"></ion-icon>
+            </div>
+
+            <!-- Custom Dropdown Menu -->
+            <div class="image-actions-menu" id="image-actions-menu">
+                <label class="menu-item" for="profile-img-upload">
+                    <ion-icon name="cloud-upload-outline" style="font-size: 1.2rem;"></ion-icon> {{ t['profile_upload_img'] }}
+                </label>
+                <button class="menu-item danger" id="remove-img-btn" {% if not current_user.profile_image %}style="display:none;"{% endif %}>
+                    <ion-icon name="trash-outline" style="font-size: 1.2rem;"></ion-icon> {{ t['profile_remove_img'] }}
+                </button>
+            </div>
+
+            <!-- Hidden File Input -->
+            <input type="file" id="profile-img-upload" accept="image/*" class="hidden" style="display: none;">
         </div>
+
         <div>
-            <p style="color: #9ca3af; font-size: 0.85rem; margin: 0;">{{ t['profile_welcome'] }}</p>
-            <p style="color: white; font-size: 1.2rem; font-weight: 600; margin: 0;">
+            <p style="color: #9ca3af; font-size: 0.9rem; margin-bottom: 0.25rem;">{{ t['profile_welcome'] }}</p>
+            <h1 style="font-family: var(--font-heading); font-size: 2rem; color: var(--text-primary); margin: 0;">
                 {{ current_user.first_name }} {{ current_user.last_name }}
                 {% if current_user.is_pro %}
-                    <span style="font-size: 0.8rem; background: gold; color: black; padding: 2px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle;">PRO</span>
+                    <span class="pro-badge">PRO ✨</span>
                 {% endif %}
-            </p>
-            {% if not current_user.is_pro %}
-                <p style="color: #FF6B6B; font-size: 0.85rem; margin-top: 4px;">{{ current_user.generations_used }} / 3 Free Generations Used - <a href="{{ url_for('upgrade') }}" style="color: gold; text-decoration: underline;">Upgrade</a></p>
-            {% else %}
-                <p style="color: #4CAF50; font-size: 0.85rem; margin-top: 4px;">Unlimited AI Generations Active</p>
-            {% endif %}
+            </h1>
+            <p style="color: #9ca3af; font-size: 0.95rem; margin-top: 0.5rem;">{{ current_user.email }}</p>
         </div>
     </div>
 
-    <!-- Burger Menu -->
-    <div class="profile-menu-container" style="position: relative;">
-        <button id="profile-burger-btn"
-            style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.6rem 0.8rem; cursor: pointer; color: white; display: flex; align-items: center; gap: 0.5rem;">
-            <ion-icon name="settings-outline" style="font-size: 1.2rem;"></ion-icon>
-            {{ t['profile_settings'] }}
-            <ion-icon name="chevron-down-outline"></ion-icon>
+    <!-- 2. Subscription Card -->
+    <div class="saas-card sub-card">
+        <div style="flex: 1; min-width: 250px;">
+            {% if current_user.is_pro %}
+                <h3 style="font-size: 1.4rem; margin-bottom: 0.5rem; color: var(--text-primary);">{{ t['profile_member_pro'] }}</h3>
+                <p style="color: #9ca3af;">{{ t['profile_unlimited_access'] }}</p>
+            {% else %}
+                <h3 style="font-size: 1.4rem; margin-bottom: 0.5rem; color: var(--text-primary);">{{ t['profile_member_free'] }}</h3>
+                <p style="color: #9ca3af;">{{ t['profile_saves_used'].format(current_user.saved_recipes | length) }}</p>
+                <div class="progress-bar-bg">
+                    {% set usage_pct = (current_user.saved_recipes | length) / 3 * 100 %}
+                    <div class="progress-fill" style="width: {{ usage_pct }}%; {% if usage_pct >= 100 %}background: #ef4444;{% endif %}"></div>
+                </div>
+            {% endif %}
+        </div>
+        <div>
+            <button class="btn-olive" id="manage-sub-trigger">{{ t['profile_manage_sub'] }}</button>
+        </div>
+    </div>
+
+    <!-- 3. User Statistics -->
+    <div class="saas-card">
+        <h2 class="section-title">{{ t['profile_cooking_stats'] }}</h2>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-value">{{ current_user.saved_recipes | length }}</div>
+                <div class="stat-label">{{ t['profile_saved_recipes'] }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">3</div>
+                <div class="stat-label">{{ t['profile_weekly_streak'] }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">Italian</div>
+                <div class="stat-label">{{ t['profile_top_cuisine'] }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">12</div>
+                <div class="stat-label">{{ t['profile_meals_gen'] }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Preferences -->
+    <div class="saas-card">
+        <h2 class="section-title">{{ t['profile_app_prefs'] }}</h2>
+        <div class="settings-list">
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h4>{{ t['profile_dark_mode'] }}</h4>
+                    <p>{{ t['profile_dark_desc'] }}</p>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h4>{{ t['profile_email_notif'] }}</h4>
+                    <p>{{ t['profile_email_desc'] }}</p>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h4>{{ t['profile_preset'] }}</h4>
+                    <p>{{ t['profile_preset_desc'] }}</p>
+                </div>
+                <select style="padding: 0.6rem; border-radius: 8px; background: transparent; border: 1px solid var(--glass-border); color: var(--text-primary); cursor: pointer; flex-shrink: 0; max-width: 130px;">
+                    <option>{{ t['opt_none'] }}</option>
+                    <option>{{ t['opt_vegan'] }}</option>
+                    <option>{{ t['opt_gluten'] }}</option>
+                    <option>Keto</option>
+                </select>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 5. Account Settings -->
+    <div class="saas-card">
+        <h2 class="section-title">{{ t['profile_account_sec'] }}</h2>
+        <div class="settings-list">
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h4>{{ t['auth_password'] }}</h4>
+                    <p>{{ t['profile_password_last'] }}</p>
+                </div>
+                <button class="btn-outline" id="change-pass-trigger">{{ t['profile_change_pass'] }}</button>
+            </div>
+
+            <div class="setting-item" style="border: none;">
+                <div class="setting-info">
+                    <h4>{{ t['profile_danger_zone'] }}</h4>
+                    <p style="color: #ef4444;">{{ t['profile_danger_desc'] }}</p>
+                </div>
+                <button class="btn-danger">{{ t['profile_delete_acc'] }}</button>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- Manage Subscription Graceful Fallback Modal -->
+<div id="subscription-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 480px; padding: 2.5rem; border-radius: 16px; text-align: center;">
+        <button id="close-sub-modal" class="close-icon-btn" style="position: absolute; top: 1rem; right: 1rem;">
+            <ion-icon name="close-outline"></ion-icon>
         </button>
 
-        <div id="profile-dropdown" class="profile-dropdown hidden"
-            style="position: absolute; top: 100%; right: 0; margin-top: 0.5rem; background: #1e1e24; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; min-width: 200px; overflow: hidden; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-            <button id="change-pass-btn"
-                style="width: 100%; padding: 1rem; background: none; border: none; color: white; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 0.75rem; transition: background 0.2s;"
-                onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">
-                <ion-icon name="key-outline"></ion-icon>
-                {{ t['profile_change_pass'] }}
+        <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(143, 169, 139, 0.15); color: var(--sage-green); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1.5rem;">
+            <ion-icon name="card-outline"></ion-icon>
+        </div>
+
+        <h3 style="margin-bottom: 0.5rem; font-size: 1.5rem; color: var(--text-primary); font-family: var(--font-heading);">{{ t['profile_manage_plan'] }}</h3>
+        <p style="color: var(--sage-green); font-weight: 600; font-size: 1.1rem; margin-bottom: 1.5rem;">
+            {% if current_user.is_pro %}{{ t['profile_member_pro'] }}{% else %}{{ t['profile_member_free'] }}{% endif %}
+        </p>
+
+        <div style="background: var(--bg-color, rgba(0,0,0,0.02)); padding: 1rem; border-radius: 12px; text-align: left; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                <span style="color: #9ca3af;">{{ t['profile_billing_cycle'] }}</span>
+                <span style="color: var(--text-primary); font-weight: 500;">{{ t['profile_monthly'] }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                <span style="color: #9ca3af;">{{ t['profile_next_renew'] }}</span>
+                <span style="color: var(--text-primary); font-weight: 500;">Placeholder (N/A)</span>
+            </div>
+        </div>
+
+        <p style="color: #9ca3af; font-size: 0.95rem; line-height: 1.5; margin-bottom: 2rem;">
+            {{ t['profile_sub_notice'] }}
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <button class="btn-olive" disabled style="width: 100%; opacity: 0.5; cursor: not-allowed; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <ion-icon name="lock-closed-outline"></ion-icon> {{ t['profile_stripe_portal'] }}
+            </button>
+            <button class="btn-outline" id="cancel-membership-btn" style="color: #ef4444; border-color: rgba(239,68,68,0.3); width: 100%;">
+                {{ t['profile_cancel_membership'] }}
             </button>
         </div>
     </div>
 </div>
 
-<section class="results-grid px-4 max-w-7xl mx-auto" style="margin-top: 30px; padding-top: 0;">
-    <!-- Header -->
-    <div style="grid-column: 1/-1; text-align: center; margin-bottom: 3rem;">
-        <h2 class="text-4xl font-bold text-white">{{ t['profile_title'] }}</h2>
-    </div>
-
-    {% if recipes %}
-    {% for recipe in recipes %}
-    <div class="recipe-card" style="display: flex; flex-direction: column;">
-        <!-- Card Image with Floating Badge -->
-        <div style="position: relative;">
-            <img src="{{ recipe.image or 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=800' }}" alt="{{ recipe.name }}" style="width: 100%; height: 220px; object-fit: cover; display: block;">
-            <div style="position: absolute; top: 10px; right: 10px; background: var(--card-bg); width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                <ion-icon name="bookmark" style="color: var(--sage-green); font-size: 1.2rem;"></ion-icon>
-            </div>
-        </div>
-
-        <div class="card-body" style="padding: 1.5rem; flex: 1; display: flex; flex-direction: column;">
-            <!-- Title -->
-            <h3 style="font-family: var(--font-heading); font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem; line-height: 1.3;">{{ recipe.name }}</h3>
-            
-            <!-- Description -->
-            <p style="color: #9ca3af; line-height: 1.5; font-size: 0.95rem; margin-bottom: 1.5rem; flex: 1;">
-                {{ recipe.instructions.split('.')[0] }}.
-            </p>
-
-            <!-- Card Footer: Read More -->
-            <div class="card-footer" style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: auto;">
-                <button class="view-recipe-btn"
-                    style="width: 100%; padding: 0.75rem; background: var(--sage-green); color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem;"
-                    onmouseover="this.style.filter='brightness(1.1)'"
-                    onmouseout="this.style.filter='none'" data-recipe='{{ recipe|tojson|safe }}'>
-                    {{ t['btn_read_more'] }} <ion-icon name="arrow-forward-outline"></ion-icon>
-                </button>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-    {% else %}
-    <div
-        style="grid-column: 1/-1; text-align: center; padding: 4rem; background: rgba(255,255,255,0.05); border-radius: 12px;">
-        <ion-icon name="book-outline" style="font-size: 4rem; color: #6b7280; margin-bottom: 1rem;"></ion-icon>
-        <p style="font-size: 1.25rem; color: #9ca3af; margin-bottom: 2rem;">{{ t['profile_no_saved'] }}</p>
-        <a href="{{ url_for('home') }}"
-            style="background: linear-gradient(135deg, #FF6B6B 0%, #d83bd2 100%); padding: 12px 30px; border-radius: 30px; text-decoration: none; color: white; font-weight: bold;">
-            {{ t['profile_find_btn'] }}
-        </a>
-    </div>
-    {% endif %}
-</section>
-
-<!-- Reuse EXACT Homepage Modal Structure -->
-<div id="recipe-modal" class="modal-overlay hidden">
-    <div class="modal-content recipe-modal-content">
-        <!-- Close Button -->
-        <button id="close-recipe-modal-btn" class="close-icon-btn" onclick="closeProfileModal()">
-            <ion-icon name="close-outline"></ion-icon>
-        </button>
-
-        <!-- Title -->
-        <h3 id="modal-recipe-title">{{ t['lbl_recipe_title'] }}</h3>
-
-        <!-- Scroll Area -->
-        <div class="modal-scroll-area">
-            <!-- Ingredients -->
-            <h4>{{ t['modal_ingredients'] }}</h4>
-            <ul id="modal-recipe-ingredients" class="ingredient-list">
-                <!-- JS Fill -->
-            </ul>
-
-            <!-- Instructions -->
-            <h4>{{ t['modal_instructions'] }}</h4>
-            <div id="modal-recipe-instructions" class="instruction-text">
-                <!-- JS Fill -->
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Change Password Modal -->
+<!-- Change Password Modal (Reused & Colored Olive Green) -->
 <div id="password-modal" class="modal-overlay hidden">
-    <div class="modal-content" style="max-width: 450px; padding: 2rem;">
-        <button id="close-pass-modal" class="close-icon-btn">
+    <div class="modal-content" style="max-width: 450px; padding: 2.5rem; border-radius: 16px;">
+        <button id="close-pass-modal" class="close-icon-btn" style="position: absolute; top: 1rem; right: 1rem;">
             <ion-icon name="close-outline"></ion-icon>
         </button>
 
-        <h3 style="margin-bottom: 1.5rem; font-size: 1.5rem;">{{ t['profile_change_pass'] }}</h3>
+        <h3 style="margin-bottom: 1.5rem; font-size: 1.5rem; color: var(--text-primary); font-family: var(--font-heading);">{{ t['profile_change_pass'] }}</h3>
 
         <form action="{{ url_for('change_password') }}" method="POST">
-            <div class="input-group">
-                <label for="current_password">{{ t['profile_current_pass'] }}</label>
-                <input type="password" id="current_password" name="current_password" required>
+            <div class="input-group" style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: #9ca3af; font-size: 0.9rem;" for="current_password">{{ t['profile_current_pass'] }}</label>
+                <input type="password" id="current_password" name="current_password" required style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: transparent; color: var(--text-primary);">
             </div>
 
-            <div class="input-group">
-                <label for="new_password">{{ t['profile_new_pass'] }}</label>
-                <input type="password" id="new_password" name="new_password" required>
-                <small>{{ t['val_pass_hint'] }}</small>
+            <div class="input-group" style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: #9ca3af; font-size: 0.9rem;" for="new_password">{{ t['profile_new_pass'] }}</label>
+                <input type="password" id="new_password" name="new_password" required style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: transparent; color: var(--text-primary);">
             </div>
 
-            <div class="input-group">
-                <label for="confirm_password">{{ t['profile_confirm_pass'] }}</label>
-                <input type="password" id="confirm_password" name="confirm_password" required>
+            <div class="input-group" style="margin-bottom: 2rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: #9ca3af; font-size: 0.9rem;" for="confirm_password">{{ t['profile_confirm_pass'] }}</label>
+                <input type="password" id="confirm_password" name="confirm_password" required style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: transparent; color: var(--text-primary);">
             </div>
 
-            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <div style="display: flex; gap: 1rem;">
                 <button type="button" id="cancel-pass-btn"
-                    style="flex: 1; padding: 0.8rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; cursor: pointer;">
+                    style="flex: 1; padding: 0.8rem; background: transparent; border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); cursor: pointer; font-weight: 600;">
                     {{ t['profile_cancel_btn'] }}
                 </button>
-                <button type="submit"
-                    style="flex: 1; padding: 0.8rem; background: linear-gradient(135deg, #FF6B6B, #d83bd2); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">
+                <button type="submit" class="btn-olive" style="flex: 1;">
                     {{ t['profile_save_btn'] }}
                 </button>
             </div>
@@ -165,94 +665,220 @@
     </div>
 </div>
 
+<!-- Custom Toast -->
+<div class="profile-toast" id="profile-toast">
+    <ion-icon name="checkmark-circle" id="toast-icon" style="color: var(--sage-green); font-size: 1.5rem;"></ion-icon>
+    <span id="toast-message" style="color: var(--text-primary); font-size: 0.95rem; font-weight: 500;">Success</span>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const recipeModal = document.getElementById('recipe-modal');
-        const modalTitle = document.getElementById('modal-recipe-title');
-        const modalIngredients = document.getElementById('modal-recipe-ingredients');
-        const modalInstructions = document.getElementById('modal-recipe-instructions');
+        const body = document.body;
 
-        // Close logic
-        window.closeProfileModal = function () {
-            recipeModal.classList.add('hidden');
-            document.body.style.overflow = '';
-        };
-
-        // Click outside closes modal
-        recipeModal.addEventListener('click', (e) => {
-            if (e.target === recipeModal) {
-                closeProfileModal();
+        // --- TOAST HELPER ---
+        const toast = document.getElementById('profile-toast');
+        const toastMessage = document.getElementById('toast-message');
+        const toastIcon = document.getElementById('toast-icon');
+        let toastTimeout;
+        
+        function showToast(text, isError = false) {
+            clearTimeout(toastTimeout);
+            toastMessage.textContent = text;
+            if (isError) {
+                toast.classList.add('error');
+                toastIcon.setAttribute('name', 'alert-circle');
+                toastIcon.style.color = '#ef4444';
+            } else {
+                toast.classList.remove('error');
+                toastIcon.setAttribute('name', 'checkmark-circle');
+                toastIcon.style.color = 'var(--sage-green)';
             }
-        });
-
-        // Open Logic
-        document.querySelectorAll('.view-recipe-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const recipe = JSON.parse(btn.getAttribute('data-recipe'));
-
-                // 1. Title
-                modalTitle.innerText = recipe.name;
-
-                // 2. Ingredients List
-                modalIngredients.innerHTML = '';
-                const ingredientsArray = recipe.ingredients.split(',').map(i => i.trim());
-                ingredientsArray.forEach(ing => {
-                    const li = document.createElement('li');
-                    li.textContent = ing; // Match homepage simplified style
-                    modalIngredients.appendChild(li);
-                });
-
-                // 3. Instructions
-                modalInstructions.innerText = recipe.instructions;
-
-                // Show Modal
-                recipeModal.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
-            });
-        });
-
-        // Keydown Close
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !recipeModal.classList.contains('hidden')) {
-                closeProfileModal();
-            }
-        });
-    });
-
-    // Burger Menu Toggle
-    const burgerBtn = document.getElementById('profile-burger-btn');
-    const dropdown = document.getElementById('profile-dropdown');
-
-    burgerBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropdown.classList.toggle('hidden');
-    });
-
-    document.addEventListener('click', () => {
-        dropdown.classList.add('hidden');
-    });
-
-    // Change Password Modal
-    const changePassBtn = document.getElementById('change-pass-btn');
-    const passModal = document.getElementById('password-modal');
-
-    changePassBtn.addEventListener('click', () => {
-        dropdown.classList.add('hidden');
-        passModal.classList.remove('hidden');
-    });
-
-    document.getElementById('close-pass-modal').addEventListener('click', () => {
-        passModal.classList.add('hidden');
-    });
-
-    document.getElementById('cancel-pass-btn').addEventListener('click', () => {
-        passModal.classList.add('hidden');
-    });
-
-    passModal.addEventListener('click', (e) => {
-        if (e.target === passModal) {
-            passModal.classList.add('hidden');
+            toast.classList.add('show');
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3500);
         }
+
+        // --- PROFILE IMAGE FEATURE ---
+        const avatarWrapper = document.getElementById('profile-avatar-wrapper');
+        const avatarEditTrigger = document.getElementById('avatar-edit-trigger');
+        const imageActionsMenu = document.getElementById('image-actions-menu');
+        const fileInput = document.getElementById('profile-img-upload');
+        const removeImgBtn = document.getElementById('remove-img-btn');
+        
+        // Toggle dropdown menu
+        avatarEditTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            imageActionsMenu.classList.toggle('show');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', () => {
+            imageActionsMenu.classList.remove('show');
+        });
+
+        // Dynamic translation keys injected by server
+        const msgImgInv = "{{ t.get('profile_img_error', 'Please select a valid image file.') }}";
+        const msgImgSuccess = "{{ t.get('profile_img_success', 'Profile image updated successfully!') }}";
+        const msgImgErr = "{{ t.get('profile_img_error', 'Error updating profile image.') }}";
+        const msgThemeDark = "{{ t.get('profile_theme_dark', 'Switched to Premium Dark Mode') }}";
+        const msgThemeLight = "{{ t.get('profile_theme_light', 'Switched to Clean Light Mode') }}";
+        const msgCancelSched = "{{ t.get('profile_cancel_sched', 'Membership scheduled to cancel at the end of the billing cycle.') }}";
+
+        // Handle File Selected
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Validate type
+            if (!file.type.startsWith('image/')) {
+                showToast(msgImgInv, true);
+                return;
+            }
+
+            // Max size 5MB
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Image size exceeds 5MB limit.', true);
+                return;
+            }
+
+            // Compress & Read Base64
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function (event) {
+                const base64Str = event.target.result;
+                
+                // Show immediate client-side preview logic
+                updateAvatarUI(base64Str);
+                
+                // Perform upload API call
+                saveProfileImage(base64Str);
+            };
+        });
+
+        // Handle Remove Image
+        removeImgBtn.addEventListener('click', () => {
+            updateAvatarUI(null);
+            saveProfileImage(null);
+            showToast("{{ t.get('profile_img_success', 'Profile image removed successfully.') }}");
+        });
+
+        // Update UI dynamically
+        function updateAvatarUI(base64Str) {
+            // First remove existing nodes inside wrapper except actions/inputs
+            const oldImg = document.getElementById('avatar-image-display');
+            const oldInitials = document.getElementById('avatar-initials-display');
+            if (oldImg) oldImg.remove();
+            if (oldInitials) oldInitials.remove();
+
+            if (base64Str) {
+                const img = document.createElement('img');
+                img.src = base64Str;
+                img.alt = "Profile Image";
+                img.className = "avatar-lg";
+                img.id = "avatar-image-display";
+                avatarWrapper.insertBefore(img, avatarEditTrigger);
+                removeImgBtn.style.display = 'flex';
+            } else {
+                const div = document.createElement('div');
+                div.className = "avatar-lg";
+                div.id = "avatar-initials-display";
+                div.textContent = "{{ current_user.first_name[0] | upper }}{{ current_user.last_name[0] | upper }}";
+                avatarWrapper.insertBefore(div, avatarEditTrigger);
+                removeImgBtn.style.display = 'none';
+            }
+        }
+
+        // Backend API submission
+        function saveProfileImage(base64Str) {
+            avatarWrapper.classList.add('loading');
+            
+            fetch('/api/update_profile_image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64Str })
+            })
+            .then(res => res.json())
+            .then(data => {
+                avatarWrapper.classList.remove('loading');
+                if (data.status === 'success') {
+                    if(base64Str) showToast(msgImgSuccess);
+                } else {
+                    showToast(data.message || msgImgErr, true);
+                }
+            })
+            .catch(err => {
+                avatarWrapper.classList.remove('loading');
+                showToast('Network error while saving image.', true);
+                console.error(err);
+            });
+        }
+
+
+        // --- DARK MODE TOGGLE SYNC ---
+        const localThemeToggle = document.getElementById('theme-toggle');
+        
+        // Init state
+        if (body.classList.contains('dark-mode')) {
+            localThemeToggle.checked = true;
+        }
+
+        localThemeToggle.addEventListener('change', (e) => {
+            const isDark = e.target.checked;
+            if (isDark) {
+                body.classList.add('dark-mode');
+            } else {
+                body.classList.remove('dark-mode');
+            }
+            localStorage.setItem('darkMode', isDark);
+            showToast(isDark ? msgThemeDark : msgThemeLight);
+        });
+
+
+        // --- MANAGE SUBSCRIPTION MODAL ---
+        const manageSubTrigger = document.getElementById('manage-sub-trigger');
+        const subModal = document.getElementById('subscription-modal');
+        const closeSubModal = document.getElementById('close-sub-modal');
+
+        if (manageSubTrigger) {
+            manageSubTrigger.addEventListener('click', () => {
+                subModal.classList.remove('hidden');
+            });
+        }
+        if (closeSubModal) {
+            closeSubModal.addEventListener('click', () => {
+                subModal.classList.add('hidden');
+            });
+        }
+        subModal.addEventListener('click', (e) => {
+            if (e.target === subModal) subModal.classList.add('hidden');
+        });
+
+        const cancelMembershipBtn = document.getElementById('cancel-membership-btn');
+        if (cancelMembershipBtn) {
+            cancelMembershipBtn.addEventListener('click', () => {
+                showToast(msgCancelSched);
+                subModal.classList.add('hidden');
+            });
+        }
+
+
+        // --- CHANGE PASSWORD MODAL ---
+        const changePassTrigger = document.getElementById('change-pass-trigger');
+        const passModal = document.getElementById('password-modal');
+        const closePassModal = document.getElementById('close-pass-modal');
+        const cancelPassBtn = document.getElementById('cancel-pass-btn');
+
+        function openPassModal() { passModal.classList.remove('hidden'); }
+        function closePassModalFunc() { passModal.classList.add('hidden'); }
+
+        if(changePassTrigger) changePassTrigger.addEventListener('click', openPassModal);
+        if(closePassModal) closePassModal.addEventListener('click', closePassModalFunc);
+        if(cancelPassBtn) cancelPassBtn.addEventListener('click', closePassModalFunc);
+
+        passModal.addEventListener('click', (e) => {
+            if (e.target === passModal) closePassModalFunc();
+        });
     });
 </script>
 

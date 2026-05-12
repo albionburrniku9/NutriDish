@@ -2,7 +2,7 @@
 
 {% block content %}
 <style>
-    /* Scoped Styles for Auth Pages to match the reference */
+    /* Scoped Styles for Auth Pages */
     .auth-wrapper {
         display: flex;
         flex-direction: column;
@@ -19,12 +19,12 @@
         margin-bottom: 2rem;
         color: white;
         text-align: center;
+        font-family: var(--font-heading);
     }
 
     .auth-card {
         background-color: #18181b;
-        /* Dark card bg */
-        border-radius: 12px;
+        border-radius: 16px;
         padding: 40px;
         width: 100%;
         max-width: 500px;
@@ -33,7 +33,8 @@
     }
 
     .form-group {
-        margin-bottom: 1rem;
+        margin-bottom: 1.25rem;
+        position: relative;
     }
 
     .form-row {
@@ -43,6 +44,7 @@
 
     .form-row .form-group {
         flex: 1;
+        min-width: 0; /* ensure flex items do not overflow */
     }
 
     .auth-input {
@@ -50,42 +52,130 @@
         background: transparent;
         border: 1px solid #3f3f46;
         border-radius: 30px;
-        /* Pill shape inputs */
         padding: 14px 20px;
         color: white;
         font-size: 1rem;
         outline: none;
-        transition: border-color 0.3s;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    /* Keep absolute padding right for eye icon toggles */
+    .auth-input.has-icon {
+        padding-right: 45px;
     }
 
     .auth-input:focus {
-        border-color: #d83bd2;
-        /* Brand Purple/Pink focus */
+        border-color: #8FAF8A;
+        box-shadow: 0 0 0 2px rgba(143, 175, 138, 0.15);
+    }
+
+    .auth-input.input-error {
+        border-color: #ef4444;
     }
 
     .auth-input::placeholder {
         color: #71717a;
     }
 
+    .eye-toggle-btn {
+        position: absolute;
+        right: 15px;
+        top: 15px;
+        background: transparent;
+        border: none;
+        color: #71717a;
+        cursor: pointer;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        transition: color 0.2s;
+    }
+
+    .eye-toggle-btn:hover {
+        color: #8FAF8A;
+    }
+
+    /* Small clear inline red error message directly under the field */
+    .field-error {
+        display: block;
+        font-size: 0.8rem;
+        color: #f87171; /* soft red */
+        margin-top: 6px;
+        margin-left: 12px;
+        min-height: 1.2em;
+        transition: opacity 0.2s;
+    }
+
+    /* Password Strength Meter */
+    .strength-wrapper {
+        margin-top: -5px;
+        margin-bottom: 15px;
+        padding: 0 12px;
+    }
+
+    .strength-bar-container {
+        height: 4px;
+        background: #3f3f46;
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 4px;
+        display: flex;
+        gap: 2px;
+    }
+
+    .strength-segment {
+        flex: 1;
+        height: 100%;
+        background: transparent;
+        transition: background 0.3s;
+    }
+
+    .strength-text {
+        font-size: 0.75rem;
+        color: #71717a;
+        margin-top: 4px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    /* Primary Sage Green CTA Button */
     .btn-primary {
         width: 100%;
-        background: linear-gradient(135deg, #FF6B6B 0%, #d83bd2 100%);
-        /* Brand Gradient */
+        background: #8FAF8A;
         color: white;
         border: none;
         border-radius: 30px;
-        /* Pill shape button */
         padding: 14px;
         font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
-        margin-top: 20px;
+        transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+        margin-top: 10px;
+        box-shadow: 0 4px 15px rgba(143, 175, 138, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
     }
 
-    .btn-primary:hover {
+    .btn-primary:hover:not(:disabled) {
+        background: #A7C6A1;
         transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(216, 59, 210, 0.4);
+        box-shadow: 0 6px 20px rgba(143, 175, 138, 0.4);
+    }
+    
+    .btn-primary:active:not(:disabled) {
+        background: #6F8F6A;
+        transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
     }
 
     .login-link {
@@ -98,21 +188,23 @@
     }
 
     .login-link a {
-        color: #FF6B6B;
-        /* Brand Pink */
+        color: #8FAF8A;
         text-decoration: none;
         font-weight: 600;
+        transition: color 0.2s;
     }
 
     .login-link a:hover {
+        color: #A7C6A1;
         text-decoration: underline;
     }
 
-    .validation-hint {
-        font-size: 0.75rem;
-        color: #71717a;
-        margin-left: 10px;
-        margin-top: 4px;
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    .spinner-border {
+        animation: spin 1s linear infinite;
+        display: inline-block;
     }
 </style>
 
@@ -120,47 +212,77 @@
     <h1 class="auth-title">{{ t['auth_signup_title'] }}</h1>
 
     <div class="auth-card">
-        {% with messages = get_flashed_messages() %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-        <div
-            style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 20px; font-size: 0.9rem;">
-            {{ messages[0] }}
-        </div>
+            {% for category, message in messages %}
+            <div style="background: {% if category == 'success' %}rgba(143, 175, 138, 0.2){% else %}rgba(239, 68, 68, 0.2){% endif %}; 
+                        color: {% if category == 'success' %}#A7C6A1{% else %}#fca5a5{% endif %}; 
+                        padding: 12px; border-radius: 12px; text-align: center; margin-bottom: 20px; font-size: 0.95rem; font-weight: 500;">
+                {{ message }}
+            </div>
+            {% endfor %}
         {% endif %}
         {% endwith %}
 
-        <form method="POST" action="{{ url_for('signup') }}">
+        <form method="POST" action="{{ url_for('signup') }}" id="signup-form" novalidate>
             <div class="form-row">
                 <div class="form-group">
-                    <input type="text" name="first_name" class="auth-input" placeholder="{{ t['auth_firstname'] }}"
-                        required pattern="[A-Za-z]+" title="{{ t['val_letters_only'] }}">
+                    <input type="text" id="first_name" name="first_name" class="auth-input" placeholder="{{ t['auth_firstname'] }}" required>
+                    <span class="field-error" id="first_name-error"></span>
                 </div>
                 <div class="form-group">
-                    <input type="text" name="last_name" class="auth-input" placeholder="{{ t['auth_lastname'] }}"
-                        required pattern="[A-Za-z]+" title="{{ t['val_letters_only'] }}">
+                    <input type="text" id="last_name" name="last_name" class="auth-input" placeholder="{{ t['auth_lastname'] }}" required>
+                    <span class="field-error" id="last_name-error"></span>
                 </div>
             </div>
 
             <div class="form-group">
-                <input type="text" name="username" class="auth-input" placeholder="{{ t['auth_username'] }}" required>
+                <input type="text" id="username" name="username" class="auth-input" placeholder="{{ t['auth_username'] }}" required>
+                <span class="field-error" id="username-error"></span>
             </div>
 
             <div class="form-group">
-                <input type="email" name="email" class="auth-input" placeholder="{{ t['auth_email'] }}" required>
+                <input type="email" id="email" name="email" class="auth-input" placeholder="{{ t['auth_email'] }}" required>
+                <span class="field-error" id="email-error"></span>
             </div>
 
             <div class="form-group">
-                <input type="tel" name="phone_number" class="auth-input" placeholder="{{ t['auth_phone'] }}" required
-                    pattern="[0-9+]+">
+                <input type="tel" id="phone_number" name="phone_number" class="auth-input" placeholder="{{ t['auth_phone'] }} {{ t['lbl_phone_opt'] }}">
+                <span class="field-error" id="phone_number-error"></span>
             </div>
 
             <div class="form-group">
-                <input type="password" name="password" class="auth-input" placeholder="{{ t['auth_password'] }}"
-                    required minlength="8" maxlength="20">
-                <p class="validation-hint">{{ t['val_pass_hint'] }}</p>
+                <input type="password" id="password" name="password" class="auth-input has-icon" placeholder="{{ t['auth_password'] }}" required>
+                <button type="button" class="eye-toggle-btn" id="toggle-password" title="Show/Hide Password">
+                    <ion-icon name="eye-off-outline" id="password-eye-icon"></ion-icon>
+                </button>
+                <span class="field-error" id="password-error"></span>
             </div>
 
-            <button type="submit" class="btn-primary">{{ t['auth_signup_btn'] }}</button>
+            <!-- Password Strength Indicator -->
+            <div class="strength-wrapper">
+                <div class="strength-bar-container">
+                    <div class="strength-segment" id="seg-1"></div>
+                    <div class="strength-segment" id="seg-2"></div>
+                    <div class="strength-segment" id="seg-3"></div>
+                </div>
+                <div class="strength-text">
+                    <span id="strength-label">{{ t['strength_label'] }}</span>
+                    <span id="strength-hint" style="color: #a1a1aa;">{{ t['strength_hint'] }}</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <input type="password" id="confirm_password" name="confirm_password" class="auth-input has-icon" placeholder="{{ t['profile_confirm_pass'] }}" required>
+                <button type="button" class="eye-toggle-btn" id="toggle-confirm-password" title="Show/Hide Confirm Password">
+                    <ion-icon name="eye-off-outline" id="confirm-eye-icon"></ion-icon>
+                </button>
+                <span class="field-error" id="confirm_password-error"></span>
+            </div>
+
+            <button type="submit" class="btn-primary" id="signup-submit-btn">
+                <span id="btn-text">{{ t['auth_signup_btn'] }}</span>
+            </button>
         </form>
 
         <div class="login-link">
@@ -168,4 +290,284 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('signup-form');
+        const firstNameInput = document.getElementById('first_name');
+        const lastNameInput = document.getElementById('last_name');
+        const usernameInput = document.getElementById('username');
+        const emailInput = document.getElementById('email');
+        const phoneInput = document.getElementById('phone_number');
+        const passwordInput = document.getElementById('password');
+        const confirmInput = document.getElementById('confirm_password');
+
+        const firstNameError = document.getElementById('first_name-error');
+        const lastNameError = document.getElementById('last_name-error');
+        const usernameError = document.getElementById('username-error');
+        const emailError = document.getElementById('email-error');
+        const phoneError = document.getElementById('phone_number-error');
+        const passwordError = document.getElementById('password-error');
+        const confirmError = document.getElementById('confirm_password-error');
+
+        const submitBtn = document.getElementById('signup-submit-btn');
+        const btnText = document.getElementById('btn-text');
+
+        // Toggle visibility triggers
+        const togglePassBtn = document.getElementById('toggle-password');
+        const passEyeIcon = document.getElementById('password-eye-icon');
+        const toggleConfBtn = document.getElementById('toggle-confirm-password');
+        const confEyeIcon = document.getElementById('confirm-eye-icon');
+
+        togglePassBtn.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            passEyeIcon.setAttribute('name', type === 'password' ? 'eye-off-outline' : 'eye-outline');
+        });
+
+        toggleConfBtn.addEventListener('click', () => {
+            const type = confirmInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            confirmInput.setAttribute('type', type);
+            confEyeIcon.setAttribute('name', type === 'password' ? 'eye-off-outline' : 'eye-outline');
+        });
+
+        // Injected translation variables
+        const msgNameReq = "{{ t['val_name_req'] }}";
+        const msgNameAlpha = "{{ t['val_name_alpha'] }}";
+        const msgLastnameReq = "{{ t['val_lastname_req'] }}";
+        const msgLastnameAlpha = "{{ t['val_lastname_alpha'] }}";
+        const msgUserReq = "{{ t['val_user_req'] }}";
+        const msgUserMin = "{{ t['val_user_min'] }}";
+        const msgEmailReq = "{{ t['val_email_req'] }}";
+        const msgEmailInv = "{{ t['val_email_invalid'] }}";
+        const msgPhoneInv = "{{ t['val_phone_invalid'] }}";
+        const msgPassReq = "{{ t['val_pass_req'] }}";
+        const msgPassMin = "{{ t['val_pass_min'] }}";
+        const msgPassRules = "{{ t['val_pass_rules'] }}";
+        const msgConfReq = "{{ t['val_conf_req'] }}";
+        const msgPassMis = "{{ t['val_pass_mismatch'] }}";
+        const msgSigningUp = "{{ t['auth_signing_up'] }}";
+        const strWeak = "{{ t['strength_weak'] }}";
+        const strMed = "{{ t['strength_medium'] }}";
+        const strStrong = "{{ t['strength_strong'] }}";
+        const strLabel = "{{ t['strength_label'] }}";
+
+        // Validation helpers
+        function isAlpha(str) {
+            return /^[A-Za-zÇçËë]+$/.test(str);
+        }
+
+        function validateFirstName() {
+            const val = firstNameInput.value.trim();
+            if (!val) {
+                firstNameError.textContent = msgNameReq;
+                firstNameInput.classList.add('input-error');
+                return false;
+            } else if (!isAlpha(val)) {
+                firstNameError.textContent = msgNameAlpha;
+                firstNameInput.classList.add('input-error');
+                return false;
+            } else {
+                firstNameError.textContent = "";
+                firstNameInput.classList.remove('input-error');
+                return true;
+            }
+        }
+
+        function validateLastName() {
+            const val = lastNameInput.value.trim();
+            if (!val) {
+                lastNameError.textContent = msgLastnameReq;
+                lastNameInput.classList.add('input-error');
+                return false;
+            } else if (!isAlpha(val)) {
+                lastNameError.textContent = msgLastnameAlpha;
+                lastNameInput.classList.add('input-error');
+                return false;
+            } else {
+                lastNameError.textContent = "";
+                lastNameInput.classList.remove('input-error');
+                return true;
+            }
+        }
+
+        function validateUsername() {
+            const val = usernameInput.value.trim();
+            if (!val) {
+                usernameError.textContent = msgUserReq;
+                usernameInput.classList.add('input-error');
+                return false;
+            } else if (val.length < 3) {
+                usernameError.textContent = msgUserMin;
+                usernameInput.classList.add('input-error');
+                return false;
+            } else {
+                usernameError.textContent = "";
+                usernameInput.classList.remove('input-error');
+                return true;
+            }
+        }
+
+        function validateEmail() {
+            const val = emailInput.value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!val) {
+                emailError.textContent = msgEmailReq;
+                emailInput.classList.add('input-error');
+                return false;
+            } else if (!emailRegex.test(val)) {
+                emailError.textContent = msgEmailInv;
+                emailInput.classList.add('input-error');
+                return false;
+            } else {
+                emailError.textContent = "";
+                emailInput.classList.remove('input-error');
+                return true;
+            }
+        }
+
+        function validatePhone() {
+            const val = phoneInput.value.trim();
+            if (!val) {
+                phoneError.textContent = "";
+                phoneInput.classList.remove('input-error');
+                return true; // Optional
+            }
+            const phoneRegex = /^[0-9+ ]+$/;
+            if (!phoneRegex.test(val)) {
+                phoneError.textContent = msgPhoneInv;
+                phoneInput.classList.add('input-error');
+                return false;
+            } else {
+                phoneError.textContent = "";
+                phoneInput.classList.remove('input-error');
+                return true;
+            }
+        }
+
+        function updateStrengthMeter(val) {
+            const seg1 = document.getElementById('seg-1');
+            const seg2 = document.getElementById('seg-2');
+            const seg3 = document.getElementById('seg-3');
+            const label = document.getElementById('strength-label');
+
+            const hasLetter = /[a-zA-Z]/.test(val);
+            const hasNumber = /[0-9]/.test(val);
+            const isLongEnough = val.length >= 8 && val.length <= 20;
+
+            // Reset
+            seg1.style.background = 'transparent';
+            seg2.style.background = 'transparent';
+            seg3.style.background = 'transparent';
+
+            let score = 0;
+            if (val.length > 0) score++;
+            if (isLongEnough && (hasLetter || hasNumber)) score++;
+            if (isLongEnough && hasLetter && hasNumber) score++;
+
+            if (score === 1) {
+                seg1.style.background = '#ef4444'; // Weak
+                label.textContent = strWeak;
+                label.style.color = '#ef4444';
+            } else if (score === 2) {
+                seg1.style.background = '#f59e0b'; // Medium
+                seg2.style.background = '#f59e0b';
+                label.textContent = strMed;
+                label.style.color = '#f59e0b';
+            } else if (score === 3) {
+                seg1.style.background = '#8FAF8A'; // Strong
+                seg2.style.background = '#8FAF8A';
+                seg3.style.background = '#8FAF8A';
+                label.textContent = strStrong;
+                label.style.color = '#8FAF8A';
+            } else {
+                label.textContent = strLabel;
+                label.style.color = '#71717a';
+            }
+        }
+
+        function validatePassword() {
+            const val = passwordInput.value;
+            updateStrengthMeter(val);
+
+            const hasLetter = /[a-zA-Z]/.test(val);
+            const hasNumber = /[0-9]/.test(val);
+
+            if (!val) {
+                passwordError.textContent = msgPassReq;
+                passwordInput.classList.add('input-error');
+                return false;
+            } else if (val.length < 8 || val.length > 20) {
+                passwordError.textContent = msgPassMin;
+                passwordInput.classList.add('input-error');
+                return false;
+            } else if (!hasLetter || !hasNumber) {
+                passwordError.textContent = msgPassRules;
+                passwordInput.classList.add('input-error');
+                return false;
+            } else {
+                passwordError.textContent = "";
+                passwordInput.classList.remove('input-error');
+                // Auto validate confirm if already typed
+                if (confirmInput.value) validateConfirmPassword();
+                return true;
+            }
+        }
+
+        function validateConfirmPassword() {
+            const val = confirmInput.value;
+            const passVal = passwordInput.value;
+            if (!val) {
+                confirmError.textContent = msgConfReq;
+                confirmInput.classList.add('input-error');
+                return false;
+            } else if (val !== passVal) {
+                confirmError.textContent = msgPassMis;
+                confirmInput.classList.add('input-error');
+                return false;
+            } else {
+                confirmError.textContent = "";
+                confirmInput.classList.remove('input-error');
+                return true;
+            }
+        }
+
+        // Live event triggers
+        firstNameInput.addEventListener('input', () => { if (firstNameInput.classList.contains('input-error')) validateFirstName(); });
+        lastNameInput.addEventListener('input', () => { if (lastNameInput.classList.contains('input-error')) validateLastName(); });
+        usernameInput.addEventListener('input', () => { if (usernameInput.classList.contains('input-error')) validateUsername(); });
+        emailInput.addEventListener('input', () => { if (emailInput.classList.contains('input-error')) validateEmail(); });
+        phoneInput.addEventListener('input', () => { if (phoneInput.classList.contains('input-error')) validatePhone(); });
+        passwordInput.addEventListener('input', validatePassword);
+        confirmInput.addEventListener('input', validateConfirmPassword);
+
+        form.addEventListener('submit', (e) => {
+            const isFValid = validateFirstName();
+            const isLValid = validateLastName();
+            const isUValid = validateUsername();
+            const isEValid = validateEmail();
+            const isPValid = validatePhone();
+            const isPassValid = validatePassword();
+            const isConfValid = validateConfirmPassword();
+
+            const isValid = isFValid && isLValid && isUValid && isEValid && isPValid && isPassValid && isConfValid;
+
+            if (!isValid) {
+                e.preventDefault();
+                // Focus first failing element
+                if (!isFValid) firstNameInput.focus();
+                else if (!isLValid) lastNameInput.focus();
+                else if (!isUValid) usernameInput.focus();
+                else if (!isEValid) emailInput.focus();
+                else if (!isPValid) phoneInput.focus();
+                else if (!isPassValid) passwordInput.focus();
+                else if (!isConfValid) confirmInput.focus();
+                return false;
+            }
+
+            submitBtn.disabled = true;
+            btnText.innerHTML = `<ion-icon name="reload-outline" class="spinner-border"></ion-icon> ${msgSigningUp}`;
+        });
+    });
+</script>
 {% endblock %}

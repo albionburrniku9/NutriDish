@@ -2,7 +2,7 @@
 
 {% block content %}
 <style>
-    /* Scoped Styles for Auth Pages to match the reference */
+    /* Scoped Styles for Auth Pages */
     .auth-wrapper {
         display: flex;
         flex-direction: column;
@@ -19,12 +19,12 @@
         margin-bottom: 2rem;
         color: white;
         text-align: center;
+        font-family: var(--font-heading);
     }
 
     .auth-card {
         background-color: #18181b;
-        /* Dark card bg */
-        border-radius: 12px;
+        border-radius: 16px;
         padding: 40px;
         width: 100%;
         max-width: 440px;
@@ -33,7 +33,8 @@
     }
 
     .form-group {
-        margin-bottom: 1rem;
+        margin-bottom: 1.25rem;
+        position: relative;
     }
 
     .auth-input {
@@ -41,42 +42,73 @@
         background: transparent;
         border: 1px solid #3f3f46;
         border-radius: 30px;
-        /* Pill shape inputs */
         padding: 14px 20px;
         color: white;
         font-size: 1rem;
         outline: none;
-        transition: border-color 0.3s;
+        transition: border-color 0.3s, box-shadow 0.3s;
     }
 
     .auth-input:focus {
-        border-color: #d83bd2;
-        /* Brand Purple/Pink focus */
+        border-color: #8FAF8A;
+        box-shadow: 0 0 0 2px rgba(143, 175, 138, 0.15);
+    }
+
+    .auth-input.input-error {
+        border-color: #ef4444;
     }
 
     .auth-input::placeholder {
         color: #71717a;
     }
 
+    /* Small clear inline red error message directly under the field */
+    .field-error {
+        display: block;
+        font-size: 0.8rem;
+        color: #f87171; /* soft red */
+        margin-top: 6px;
+        margin-left: 12px;
+        min-height: 1.2em;
+        transition: opacity 0.2s;
+    }
+
+    /* Primary Sage Green CTA Button */
     .btn-primary {
         width: 100%;
-        background: linear-gradient(135deg, #FF6B6B 0%, #d83bd2 100%);
-        /* Brand Gradient */
+        background: #8FAF8A;
         color: white;
         border: none;
         border-radius: 30px;
-        /* Pill shape button */
         padding: 14px;
         font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
+        transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
         margin-top: 10px;
+        box-shadow: 0 4px 15px rgba(143, 175, 138, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
     }
 
-    .btn-primary:hover {
+    .btn-primary:hover:not(:disabled) {
+        background: #A7C6A1;
         transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(216, 59, 210, 0.4);
+        box-shadow: 0 6px 20px rgba(143, 175, 138, 0.4);
+    }
+    
+    .btn-primary:active:not(:disabled) {
+        background: #6F8F6A;
+        transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
     }
 
     .forgot-pass {
@@ -86,9 +118,11 @@
         margin: 20px 0;
         text-decoration: none;
         font-size: 0.9rem;
+        transition: color 0.2s;
     }
 
     .forgot-pass:hover {
+        color: #8FAF8A;
         text-decoration: underline;
     }
 
@@ -99,23 +133,33 @@
         width: 100%;
     }
 
+    /* Secondary outline button updated to Sage Green accent */
     .btn-secondary {
         display: block;
         width: 100%;
         background-color: transparent;
-        border: 1px solid #FF6B6B;
-        color: #FF6B6B;
+        border: 1px solid #8FAF8A;
+        color: #8FAF8A;
         text-align: center;
         text-decoration: none;
         border-radius: 30px;
         padding: 14px;
         font-size: 1rem;
         font-weight: 600;
-        transition: background-color 0.2s;
+        transition: background-color 0.2s, color 0.2s;
     }
 
     .btn-secondary:hover {
-        background-color: rgba(255, 107, 107, 0.1);
+        background-color: rgba(143, 175, 138, 0.1);
+        color: #A7C6A1;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    .spinner-border {
+        animation: spin 1s linear infinite;
+        display: inline-block;
     }
 </style>
 
@@ -123,26 +167,32 @@
     <h1 class="auth-title">{{ t['auth_login_title'] }}</h1>
 
     <div class="auth-card">
-        {% with messages = get_flashed_messages() %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-        <div
-            style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 20px; font-size: 0.9rem;">
-            {{ messages[0] }}
-        </div>
+            {% for category, message in messages %}
+            <div style="background: {% if category == 'success' %}rgba(143, 175, 138, 0.2){% else %}rgba(239, 68, 68, 0.2){% endif %}; 
+                        color: {% if category == 'success' %}#A7C6A1{% else %}#fca5a5{% endif %}; 
+                        padding: 12px; border-radius: 12px; text-align: center; margin-bottom: 20px; font-size: 0.95rem; font-weight: 500;">
+                {{ message }}
+            </div>
+            {% endfor %}
         {% endif %}
         {% endwith %}
 
-        <form method="POST" action="{{ url_for('login') }}">
+        <form method="POST" action="{{ url_for('login') }}" id="login-form" novalidate>
             <div class="form-group">
-                <input type="text" name="username" class="auth-input" placeholder="{{ t['auth_username'] }}" required>
+                <input type="text" id="username" name="username" class="auth-input" placeholder="{{ t['auth_username'] }}" required>
+                <span class="field-error" id="username-error"></span>
             </div>
 
             <div class="form-group">
-                <input type="password" name="password" class="auth-input" placeholder="{{ t['auth_password'] }}"
-                    required>
+                <input type="password" id="password" name="password" class="auth-input" placeholder="{{ t['auth_password'] }}" required>
+                <span class="field-error" id="password-error"></span>
             </div>
 
-            <button type="submit" class="btn-primary">{{ t['auth_login_btn'] }}</button>
+            <button type="submit" class="btn-primary" id="login-submit-btn">
+                <span id="btn-text">{{ t['auth_login_btn'] }}</span>
+            </button>
         </form>
 
         <a href="#" class="forgot-pass">{{ t['auth_forgot'] }}</a>
@@ -152,4 +202,78 @@
         <a href="{{ url_for('signup') }}" class="btn-secondary">{{ t['auth_create_account'] }}</a>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('login-form');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const usernameError = document.getElementById('username-error');
+        const passwordError = document.getElementById('password-error');
+        const submitBtn = document.getElementById('login-submit-btn');
+        const btnText = document.getElementById('btn-text');
+
+        // Dynamic translation variables injected by server
+        const msgUserReq = "{{ t['val_user_req'] }}";
+        const msgPassReq = "{{ t['val_pass_req'] }}";
+        const msgPassMin = "{{ t['val_pass_min'] }}";
+        const msgLoggingIn = "{{ t['auth_logging_in'] }}";
+
+        function validateUsername() {
+            const val = usernameInput.value.trim();
+            if (!val) {
+                usernameError.textContent = msgUserReq;
+                usernameInput.classList.add('input-error');
+                return false;
+            } else {
+                usernameError.textContent = "";
+                usernameInput.classList.remove('input-error');
+                return true;
+            }
+        }
+
+        function validatePassword() {
+            const val = passwordInput.value;
+            if (!val) {
+                passwordError.textContent = msgPassReq;
+                passwordInput.classList.add('input-error');
+                return false;
+            } else if (val.length < 8) {
+                passwordError.textContent = msgPassMin;
+                passwordInput.classList.add('input-error');
+                return false;
+            } else {
+                passwordError.textContent = "";
+                passwordInput.classList.remove('input-error');
+                return true;
+            }
+        }
+
+        // Live inline validation feedback on typing
+        usernameInput.addEventListener('input', () => {
+            if (usernameInput.classList.contains('input-error')) validateUsername();
+        });
+
+        passwordInput.addEventListener('input', () => {
+            if (passwordInput.classList.contains('input-error')) validatePassword();
+        });
+
+        form.addEventListener('submit', (e) => {
+            const isUserValid = validateUsername();
+            const isPassValid = validatePassword();
+
+            if (!isUserValid || !isPassValid) {
+                e.preventDefault();
+                // Focus first invalid field
+                if (!isUserValid) usernameInput.focus();
+                else passwordInput.focus();
+                return false;
+            }
+
+            // Set loading state on button
+            submitBtn.disabled = true;
+            btnText.innerHTML = `<ion-icon name="reload-outline" class="spinner-border"></ion-icon> ${msgLoggingIn}`;
+        });
+    });
+</script>
 {% endblock %}

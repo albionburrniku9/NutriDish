@@ -33,6 +33,7 @@
             <li><a href="{{ url_for('home') }}" class="active">{{ t['nav_home'] }}</a></li>
 
             {% if current_user.is_authenticated %}
+            <li><a href="{{ url_for('saved') }}">{{ t['nav_saved'] }}</a></li>
             <li><a href="{{ url_for('profile') }}">{{ t['nav_profile'] }}</a></li>
             <li><a href="{{ url_for('logout') }}" style="color: var(--safety-red);">{{ t['nav_logout'] }}</a></li>
             {% else %}
@@ -44,11 +45,6 @@
                     <option value="sq" {% if lang=='sq' %}selected{% endif %}>🇦🇱 SQ</option>
                     <option value="de" {% if lang=='de' %}selected{% endif %}>🇩🇪 DE</option>
                 </select>
-            </li>
-            <li>
-                <button class="dark-mode-toggle" id="dark-mode-btn" title="Toggle Dark Mode">
-                    <ion-icon name="moon-outline"></ion-icon>
-                </button>
             </li>
         </ul>
     </nav>
@@ -112,7 +108,7 @@
         window.userLoggedIn = "{{ 'true' if current_user.is_authenticated else 'false' }}" === "true";
     </script>
     
-    <!-- Dark Mode Toggle Script -->
+    <!-- Dark Mode Init Script -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const darkModeBtn = document.getElementById('dark-mode-btn');
@@ -122,17 +118,19 @@
             const savedMode = localStorage.getItem('darkMode');
             if (savedMode === 'true') {
                 body.classList.add('dark-mode');
-                darkModeBtn.innerHTML = '<ion-icon name="sunny-outline"></ion-icon>';
+                if (darkModeBtn) darkModeBtn.innerHTML = '<ion-icon name="sunny-outline"></ion-icon>';
             }
             
-            darkModeBtn.addEventListener('click', () => {
-                body.classList.toggle('dark-mode');
-                const isDark = body.classList.contains('dark-mode');
-                localStorage.setItem('darkMode', isDark);
-                darkModeBtn.innerHTML = isDark 
-                    ? '<ion-icon name="sunny-outline"></ion-icon>' 
-                    : '<ion-icon name="moon-outline"></ion-icon>';
-            });
+            if (darkModeBtn) {
+                darkModeBtn.addEventListener('click', () => {
+                    body.classList.toggle('dark-mode');
+                    const isDark = body.classList.contains('dark-mode');
+                    localStorage.setItem('darkMode', isDark);
+                    darkModeBtn.innerHTML = isDark 
+                        ? '<ion-icon name="sunny-outline"></ion-icon>' 
+                        : '<ion-icon name="moon-outline"></ion-icon>';
+                });
+            }
         });
     </script>
     
