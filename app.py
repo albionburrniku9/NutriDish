@@ -60,9 +60,51 @@ def login():
             
     return render_template('login.html')
 
-@app.route('/signup', methods=['GET'])
+@app.route('/signup', methods=['GET', 'POST'])
 def signup():
+    if request.method == 'POST':
+        # Safe fallback redirect if submitted normally by older cached browsers
+        return redirect(url_for('signup'))
     return render_template('signup.html')
+
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "Payload jo valid."}), 400
+            
+        username = data.get('username', '').strip()
+        password = data.get('password', '')
+        
+        if not username or not password:
+            return jsonify({
+                "success": False, 
+                "message": "Ju lutem plotësoni të gjitha fushat."
+            }), 400
+            
+        # Support login with either username or email
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            user = User.query.filter_by(email=username).first()
+            
+        if user and user.check_password(password):
+            login_user(user)
+            return jsonify({
+                "success": True,
+                "message": "Hyrja u krye me sukses."
+            }), 200
+        else:
+            return jsonify({
+                "success": False,
+                "message": "Të dhënat e hyrjes janë të pasakta."
+            }), 401
+    except Exception as e:
+        print(f"Login API Error: {e}")
+        return jsonify({
+            "success": False,
+            "message": "Diçka shkoi keq. Provo përsëri."
+        }), 500
 
 @app.route('/api/auth/signup', methods=['POST'])
 def api_signup():

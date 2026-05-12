@@ -179,7 +179,9 @@
         {% endif %}
         {% endwith %}
 
-        <form method="POST" action="{{ url_for('login') }}" id="login-form" novalidate>
+        <div id="global-api-error" style="display: none; background: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 12px; border-radius: 12px; text-align: center; margin-bottom: 20px; font-size: 0.95rem; font-weight: 500;"></div>
+
+        <form id="login-form" novalidate>
             <div class="form-group">
                 <input type="text" id="username" name="username" class="auth-input" placeholder="{{ t['auth_username'] }}" required>
                 <span class="field-error" id="username-error"></span>
@@ -258,21 +260,63 @@
             if (passwordInput.classList.contains('input-error')) validatePassword();
         });
 
-        form.addEventListener('submit', (e) => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Always prevent default form submission
+
+            const globalErrorDiv = document.getElementById('global-api-error');
+            if (globalErrorDiv) {
+                globalErrorDiv.style.display = 'none';
+                globalErrorDiv.textContent = '';
+            }
+
             const isUserValid = validateUsername();
             const isPassValid = validatePassword();
 
             if (!isUserValid || !isPassValid) {
-                e.preventDefault();
                 // Focus first invalid field
                 if (!isUserValid) usernameInput.focus();
                 else passwordInput.focus();
                 return false;
             }
 
+            const originalBtnText = btnText.innerHTML;
+
             // Set loading state on button
             submitBtn.disabled = true;
             btnText.innerHTML = `<ion-icon name="reload-outline" class="spinner-border"></ion-icon> ${msgLoggingIn}`;
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: usernameInput.value.trim(),
+                        password: passwordInput.value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    window.location.href = "{{ url_for('home') }}";
+                } else {
+                    submitBtn.disabled = false;
+                    btnText.innerHTML = originalBtnText;
+                    if (globalErrorDiv) {
+                        globalErrorDiv.style.display = 'block';
+                        globalErrorDiv.textContent = data.message || "Të dhënat e hyrjes janë të pasakta.";
+                    }
+                }
+            } catch (err) {
+                submitBtn.disabled = false;
+                btnText.innerHTML = originalBtnText;
+                if (globalErrorDiv) {
+                    globalErrorDiv.style.display = 'block';
+                    globalErrorDiv.textContent = "Diçka shkoi keq. Provo përsëri.";
+                }
+            }
         });
     });
 </script>
