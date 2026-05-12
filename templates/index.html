@@ -31,7 +31,8 @@
         <label for="ingredients-input">
             <ion-icon name="basket-outline"></ion-icon> {{ t['lbl_pantry'] }}
         </label>
-        <textarea id="ingredients-input" rows="3" placeholder="{{ t['ph_pantry'] }}"></textarea>
+        <textarea id="ingredients-input" rows="3" placeholder="{{ t['ph_pantry'] }}" style="transition: border-color 0.2s;"></textarea>
+        <span id="ingredients-error" class="field-error" style="display: none; color: #f87171; font-size: 0.85rem; margin-top: 6px; margin-left: 4px; font-weight: 500;"></span>
     </div>
 
     <button id="get-recipes-btn" class="glow-button">

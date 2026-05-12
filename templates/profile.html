@@ -817,22 +817,28 @@
 
         // --- DARK MODE TOGGLE SYNC ---
         const localThemeToggle = document.getElementById('theme-toggle');
-        
-        // Init state
-        if (body.classList.contains('dark-mode')) {
-            localThemeToggle.checked = true;
-        }
-
-        localThemeToggle.addEventListener('change', (e) => {
-            const isDark = e.target.checked;
-            if (isDark) {
+        if (localThemeToggle) {
+            // Read directly from localStorage to guarantee correct state regardless of DOMContentLoaded order
+            const savedMode = localStorage.getItem('darkMode');
+            if (savedMode === 'true' || savedMode === null) {
+                localThemeToggle.checked = true;
                 body.classList.add('dark-mode');
             } else {
+                localThemeToggle.checked = false;
                 body.classList.remove('dark-mode');
             }
-            localStorage.setItem('darkMode', isDark);
-            showToast(isDark ? msgThemeDark : msgThemeLight);
-        });
+
+            localThemeToggle.addEventListener('change', (e) => {
+                const isDark = e.target.checked;
+                if (isDark) {
+                    body.classList.add('dark-mode');
+                } else {
+                    body.classList.remove('dark-mode');
+                }
+                localStorage.setItem('darkMode', isDark);
+                showToast(isDark ? msgThemeDark : msgThemeLight);
+            });
+        }
 
 
         // --- MANAGE SUBSCRIPTION MODAL ---

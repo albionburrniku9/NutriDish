@@ -50,13 +50,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    if (ingredientsInput) {
+        ingredientsInput.addEventListener('input', () => {
+            const errSpan = document.getElementById('ingredients-error');
+            if (errSpan) errSpan.style.display = 'none';
+            ingredientsInput.classList.remove('input-error');
+            ingredientsInput.style.borderColor = '';
+        });
+    }
+
     getRecipesBtn.addEventListener('click', async () => {
         // Validation
         const ingredientsVal = ingredientsInput.value.trim().toLowerCase();
         const restriction = restrictionInput.value;
 
         if (!ingredientsVal) {
-            alert(window.langData.val_empty);
+            const errSpan = document.getElementById('ingredients-error');
+            if (errSpan) {
+                errSpan.textContent = window.langData.val_empty;
+                errSpan.style.display = 'block';
+            }
+            ingredientsInput.classList.add('input-error');
+            ingredientsInput.style.borderColor = '#f87171';
+            ingredientsInput.focus();
             return;
         }
 

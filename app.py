@@ -4,6 +4,7 @@ from ai_engine import RecipeRecommender
 from translations import translations
 from models import db, User, SavedRecipe
 import os
+import re
 
 app = Flask(__name__)
 # Config
@@ -59,44 +60,105 @@ def login():
             
     return render_template('login.html')
 
-@app.route('/signup', methods=['GET', 'POST'])
+@app.route('/signup', methods=['GET'])
 def signup():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        first_name = request.form.get('first_name')
-        last_name = request.form.get('last_name')
-        email = request.form.get('email')
-        phone_number = request.form.get('phone_number')
-        
-        # Validation
-        if not first_name.isalpha() or not last_name.isalpha():
-            flash(get_t().get('flash_name_alpha'))
-            return render_template('signup.html')
-            
-        if len(password) < 8 or len(password) > 20:
-             flash(get_t().get('flash_pass_len'))
-             return render_template('signup.html')
-
-        if User.query.filter_by(username=username).first():
-            flash(get_t().get('flash_user_exist'))
-        elif User.query.filter_by(email=email).first():
-            flash(get_t().get('flash_email_exist'))
-        else:
-            new_user = User(
-                username=username,
-                email=email,
-                first_name=first_name,
-                last_name=last_name,
-                phone_number=phone_number
-            )
-            new_user.set_password(password)
-            db.session.add(new_user)
-            db.session.commit()
-            flash("Llogaria u krijua me sukses! Ju lutemi kyçuni.", "success")
-            return redirect(url_for('login'))
-            
     return render_template('signup.html')
+
+@app.route('/api/auth/signup', methods=['POST'])
+def api_signup():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                "success": False,
+                "message": "Invalid JSON payload."
+            }), 400
+            
+        first_name = data.get('first_name', '').strip()
+        last_name = data.get('last_name', '').strip()
+        username = data.get('username', '').strip()
+        email = data.get('email', '').strip()
+        password = data.get('password', '')
+        confirm_password = data.get('confirm_password', '')
+        phone_number = data.get('phone_number', '').strip()
+
+        errors = {}
+
+        # First name required
+        if not first_name:
+            errors['first_name'] = "Emri është i detyrueshëm."
+            
+        # Last name required
+        if not last_name:
+            errors['last_name'] = "Mbiemri është i detyrueshëm."
+
+        # Username required & minimum 3 characters
+        if not username:
+            errors['username'] = "Përdoruesi është i detyrueshëm."
+        elif len(username) < 3:
+            errors['username'] = "Përdoruesi duhet të ketë të paktën 3 karaktere."
+
+        # Email required & valid format
+        email_regex = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+        if not email:
+            errors['email'] = "Email është i detyrueshëm."
+        elif not re.match(email_regex, email):
+            errors['email'] = "Email nuk është valid."
+
+        # Password required, 8-20 chars, letter + number
+        if not password:
+            errors['password'] = "Fjalëkalimi është i detyrueshëm."
+        elif len(password) < 8 or len(password) > 20:
+            errors['password'] = "Fjalëkalimi duhet të ketë 8–20 karaktere."
+        elif not re.search(r'[a-zA-Z]', password) or not re.search(r'[0-9]', password):
+            errors['password'] = "Fjalëkalimi duhet të përmbajë të paktën një shkronjë dhe një numër."
+
+        # Confirm password match
+        if confirm_password != password:
+            errors['confirm_password'] = "Fjalëkalimet nuk përputhen."
+
+        # Phone optional but validate if provided
+        if phone_number:
+            if not re.match(r'^[0-9+ ]+$', phone_number):
+                errors['phone_number'] = "Numri i telefonit nuk është valid."
+
+        if errors:
+            return jsonify({
+                "success": False,
+                "message": "Please fix the validation errors.",
+                "errors": errors
+            }), 400
+
+        # Check duplicate user/email
+        if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
+            return jsonify({
+                "success": False,
+                "message": "Ky email ose përdorues ekziston tashmë."
+            }), 409
+
+        # Create user
+        new_user = User(
+            username=username,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            phone_number=phone_number
+        )
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Llogaria u krijua me sukses."
+        }), 201
+
+    except Exception as e:
+        print(f"Signup API Error: {e}")
+        return jsonify({
+            "success": False,
+            "message": "Diçka shkoi keq. Provo përsëri."
+        }), 500
 
 @app.route('/logout')
 @login_required
