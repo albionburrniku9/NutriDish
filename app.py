@@ -116,6 +116,9 @@ def api_login():
             }), 401
     except Exception as e:
         print(f"Login API Error: {e}")
+        db.session.rollback()
+        import traceback
+        traceback.print_exc()
         return jsonify({
             "success": False,
             "message": "Diçka shkoi keq. Provo përsëri."
@@ -212,6 +215,9 @@ def api_signup():
 
     except Exception as e:
         print(f"Signup API Error: {e}")
+        db.session.rollback()
+        import traceback
+        traceback.print_exc()
         return jsonify({
             "success": False,
             "message": "Diçka shkoi keq. Provo përsëri."
