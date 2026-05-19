@@ -96,42 +96,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
 
-            setTimeout(() => {
-                loadingSpinner.classList.add('hidden');
+            loadingSpinner.classList.add('hidden');
 
-                if (data.status === 'conflict') {
-                    // SERVER DETECTED CONFLICT
+            if (data.status === 'conflict') {
+                // SERVER DETECTED CONFLICT
 
-                    // 1. Get the Localized Name of the restriction (from the UI dropdown)
-                    const restrictionSelect = document.getElementById('restriction-input');
-                    const selectedText = restrictionSelect.options[restrictionSelect.selectedIndex].text;
+                // 1. Get the Localized Name of the restriction (from the UI dropdown)
+                const restrictionSelect = document.getElementById('restriction-input');
+                const selectedText = restrictionSelect.options[restrictionSelect.selectedIndex].text;
 
-                    // 2. Use format string replacement
-                    let msg = window.langData.val_conflict_msg
-                        .replace('{0}', selectedText)
-                        .replace('{1}', data.conflict_item); // Item returned by server (now translated)
+                // 2. Use format string replacement
+                let msg = window.langData.val_conflict_msg
+                    .replace('{0}', selectedText)
+                    .replace('{1}', data.conflict_item); // Item returned by server (now translated)
 
-                    warningMessage.innerHTML = msg;
+                warningMessage.innerHTML = msg;
+                warningModal.classList.remove('hidden');
+            } else if (data.status === 'ok') {
+                // SUCCESS
+                displayResults(data.data);
+            } else if (data.status === 'error') {
+                if (data.message === 'login_required') {
+                    alert(window.langData.err_login_required || "You must be logged in.");
+                    window.location.href = '/login';
+                } else if (data.message === 'limit_reached') {
+                    warningMessage.innerHTML = (window.langData.err_limit_reached || "Limit reached.") + '<br><br><a href="/upgrade" class="glow-button" style="text-decoration:none; display:inline-block; margin-top:10px;">' + (window.langData.btn_upgrade || "Upgrade") + '</a>';
                     warningModal.classList.remove('hidden');
-                } else if (data.status === 'ok') {
-                    // SUCCESS
-                    displayResults(data.data);
-                } else if (data.status === 'error') {
-                    if (data.message === 'login_required') {
-                        alert(window.langData.err_login_required || "You must be logged in.");
-                        window.location.href = '/login';
-                    } else if (data.message === 'limit_reached') {
-                        warningMessage.innerHTML = (window.langData.err_limit_reached || "Limit reached.") + '<br><br><a href="/upgrade" class="glow-button" style="text-decoration:none; display:inline-block; margin-top:10px;">' + (window.langData.btn_upgrade || "Upgrade") + '</a>';
-                        warningModal.classList.remove('hidden');
-                    } else {
-                        alert(data.message);
-                    }
                 } else {
-                    // Error or unknown state
-                    console.error("Unknown Server Status:", data);
-                    alert(window.langData.err_generic);
+                    alert(data.message);
                 }
-            }, 600);
+            } else {
+                // Error or unknown state
+                console.error("Unknown Server Status:", data);
+                alert(window.langData.err_generic);
+            }
 
         } catch (error) {
             console.error('Error:', error);
@@ -142,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function displayResults(recipes) {
         if (!recipes || recipes.length === 0) {
+            resultsSection.classList.remove('compact-results');
             resultsSection.innerHTML = `
                 <div style="grid-column: 1/-1; text-align: center; padding: 2rem;">
                     <h3>${window.langData.msg_no_recipes}</h3>
@@ -150,6 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             return;
         }
+
+        resultsSection.classList.toggle('compact-results', recipes.length > 0 && recipes.length <= 3);
 
         recipes.forEach((recipe, index) => {
             const card = document.createElement('div');

@@ -44,7 +44,7 @@
         width: 90px;
         height: 90px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--sage-green, #8FA98B), var(--sage-dark, #5F7A5D));
+        background: linear-gradient(135deg, var(--sage-green, #8FA98B), var(--sage-dark, #6B8067));
         display: flex;
         align-items: center;
         justify-content: center;
@@ -165,7 +165,7 @@
         text-align: left;
     }
     .menu-item:hover {
-        background: rgba(143, 169, 139, 0.1);
+        background: rgba(143, 169, 139, 0.12);
         color: var(--sage-green);
     }
     .menu-item.danger:hover {
@@ -388,12 +388,12 @@
         transition: all 0.2s;
     }
     .btn-outline:hover {
-        background: rgba(143, 169, 139, 0.1);
+        background: rgba(143, 169, 139, 0.12);
         color: var(--sage-green);
         border-color: var(--sage-green);
     }
     body.dark-mode .btn-outline:hover {
-        background: rgba(143, 169, 139, 0.15);
+        background: rgba(143, 169, 139, 0.16);
     }
 
     /* Olive Green buttons signature override */
@@ -410,6 +410,33 @@
     .btn-olive:hover {
         filter: brightness(1.1);
         transform: translateY(-1px);
+    }
+
+    .profile-select {
+        padding: 0.6rem;
+        border-radius: 8px;
+        background: var(--card-bg);
+        border: 1px solid var(--glass-border);
+        color: var(--text-primary);
+        cursor: pointer;
+        flex-shrink: 0;
+        max-width: 150px;
+    }
+
+    .profile-select option {
+        background: var(--card-bg);
+        color: var(--text-primary);
+    }
+
+    body.dark-mode .profile-select {
+        background: #1e1e24;
+        color: #FAF9F6;
+        border-color: rgba(255,255,255,0.12);
+    }
+
+    body.dark-mode .profile-select option {
+        background: #1e1e24;
+        color: #FAF9F6;
     }
 
     h2.section-title {
@@ -487,6 +514,9 @@
                     <div class="progress-fill" style="width: {{ usage_pct }}%; {% if usage_pct >= 100 %}background: #ef4444;{% endif %}"></div>
                 </div>
             {% endif %}
+            <p style="color: var(--sage-light); font-size: 0.9rem; margin-top: 0.85rem;">
+                {{ t['profile_cancel_anytime_notice'] }}
+            </p>
         </div>
         <div>
             <button class="btn-olive" id="manage-sub-trigger">{{ t['profile_manage_sub'] }}</button>
@@ -548,7 +578,7 @@
                     <h4>{{ t['profile_preset'] }}</h4>
                     <p>{{ t['profile_preset_desc'] }}</p>
                 </div>
-                <select style="padding: 0.6rem; border-radius: 8px; background: transparent; border: 1px solid var(--glass-border); color: var(--text-primary); cursor: pointer; flex-shrink: 0; max-width: 130px;">
+                <select class="profile-select">
                     <option>{{ t['opt_none'] }}</option>
                     <option>{{ t['opt_vegan'] }}</option>
                     <option>{{ t['opt_gluten'] }}</option>
@@ -592,7 +622,7 @@
             <ion-icon name="close-outline"></ion-icon>
         </button>
 
-        <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(143, 169, 139, 0.15); color: var(--sage-green); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1.5rem;">
+        <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(143, 169, 139, 0.16); color: var(--sage-green); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1.5rem;">
             <ion-icon name="card-outline"></ion-icon>
         </div>
 
@@ -617,12 +647,18 @@
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            {% if current_user.is_pro %}
             <button class="btn-olive" disabled style="width: 100%; opacity: 0.5; cursor: not-allowed; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
                 <ion-icon name="lock-closed-outline"></ion-icon> {{ t['profile_stripe_portal'] }}
             </button>
             <button class="btn-outline" id="cancel-membership-btn" style="color: #ef4444; border-color: rgba(239,68,68,0.3); width: 100%;">
                 {{ t['profile_cancel_membership'] }}
             </button>
+            {% else %}
+            <a href="{{ url_for('upgrade') }}" class="btn-olive" style="width: 100%; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <ion-icon name="card-outline"></ion-icon> {{ t['btn_upgrade'] }}
+            </a>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -889,3 +925,4 @@
 </script>
 
 {% endblock %}
+

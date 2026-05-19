@@ -1,9 +1,12 @@
-from flask import Flask, render_template, request, jsonify, make_response, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, make_response, redirect, url_for, flash, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from translations import translations
-from models import db, User, SavedRecipe
+from models import db, User, SavedRecipe, PasswordResetToken
+from datetime import datetime, timedelta, timezone
+from hashlib import sha256
 import os
 import re
+import secrets
 
 app = Flask(__name__)
 # Config
@@ -21,6 +24,11 @@ db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+login_manager.session_protection = 'basic'
+app.permanent_session_lifetime = timedelta(days=14)
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('VERCEL_ENV') == 'production'
 
 recommender = None
 
@@ -38,6 +46,17 @@ if os.getenv('AUTO_CREATE_TABLES') == '1':
 def get_t():
     lang = request.cookies.get('lang', 'en')
     return translations.get(lang, translations['en'])
+
+def hash_reset_token(token):
+    return sha256(token.encode('utf-8')).hexdigest()
+
+def send_password_reset_email(user, reset_url):
+    # TODO: Configure an SMTP/email provider such as Resend, SendGrid, Mailgun, or SMTP.
+    # In production, send reset_url to user.email and do not print it.
+    if os.getenv('MAIL_ENABLED') == '1':
+        print("MAIL_ENABLED is set, but no email provider is configured yet.")
+    elif os.getenv('VERCEL_ENV') != 'production':
+        print(f"Password reset link for {user.email}: {reset_url}")
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -57,7 +76,7 @@ def home():
 
 @app.route('/favicon.ico')
 def favicon():
-    return '', 204
+    return redirect(url_for('static', filename='favicon.svg'))
 
 @app.route('/api/health/db')
 def db_health():
@@ -69,7 +88,7 @@ def db_health():
 
         inspector = inspect(db.engine)
         tables = set(inspector.get_table_names())
-        required_tables = {'users', 'saved_recipes', 'dietary_profiles'}
+        required_tables = {'users', 'saved_recipes', 'dietary_profiles', 'password_reset_tokens'}
         missing_tables = sorted(required_tables - tables)
 
         return jsonify({
@@ -96,7 +115,8 @@ def login():
         user = User.query.filter_by(username=username).first()
         
         if user and user.check_password(password):
-            login_user(user)
+            session.permanent = True
+            login_user(user, remember=True, duration=timedelta(days=14))
             return redirect(url_for('home'))
         else:
             flash(get_t().get('flash_invalid_cred'))
@@ -110,12 +130,69 @@ def signup():
         return redirect(url_for('signup'))
     return render_template('signup.html')
 
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+
+        if email:
+            user = User.query.filter_by(email=email).first()
+            if user:
+                raw_token = secrets.token_urlsafe(32)
+                reset_token = PasswordResetToken(
+                    user_id=user.id,
+                    token_hash=hash_reset_token(raw_token),
+                    expires_at=datetime.now(timezone.utc) + timedelta(hours=1)
+                )
+                db.session.add(reset_token)
+                db.session.commit()
+                reset_url = url_for('reset_password', token=raw_token, _external=True)
+                send_password_reset_email(user, reset_url)
+
+        flash(get_t().get('auth_reset_sent'), 'success')
+        return redirect(url_for('login'))
+
+    return render_template('forgot_password.html')
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    token_hash = hash_reset_token(token)
+    reset_token = PasswordResetToken.query.filter_by(token_hash=token_hash).first()
+
+    if not reset_token or not reset_token.is_valid():
+        flash(get_t().get('auth_reset_invalid'), 'error')
+        return redirect(url_for('forgot_password'))
+
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+
+        if len(password) < 8 or len(password) > 20:
+            flash(get_t().get('val_pass_min'), 'error')
+            return render_template('reset_password.html')
+
+        if not re.search(r'[a-zA-Z]', password) or not re.search(r'[0-9]', password):
+            flash(get_t().get('val_pass_rules'), 'error')
+            return render_template('reset_password.html')
+
+        if password != confirm_password:
+            flash(get_t().get('val_pass_mismatch'), 'error')
+            return render_template('reset_password.html')
+
+        reset_token.user.set_password(password)
+        reset_token.used_at = datetime.now(timezone.utc)
+        db.session.commit()
+        flash(get_t().get('auth_reset_success'), 'success')
+        return redirect(url_for('login'))
+
+    return render_template('reset_password.html')
+
 @app.route('/api/auth/login', methods=['POST'])
 def api_login():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({"success": False, "message": "Payload jo valid."}), 400
+            return jsonify({"success": False, "message": get_t().get('auth_invalid_payload')}), 400
             
         username = data.get('username', '').strip()
         password = data.get('password', '')
@@ -123,7 +200,7 @@ def api_login():
         if not username or not password:
             return jsonify({
                 "success": False, 
-                "message": "Ju lutem plotësoni të gjitha fushat."
+                "message": get_t().get('auth_required_fields')
             }), 400
             
         # Support login with either username or email
@@ -132,15 +209,16 @@ def api_login():
             user = User.query.filter_by(email=username).first()
             
         if user and user.check_password(password):
-            login_user(user)
+            session.permanent = True
+            login_user(user, remember=True, duration=timedelta(days=14))
             return jsonify({
                 "success": True,
-                "message": "Hyrja u krye me sukses."
+                "message": get_t().get('auth_login_success')
             }), 200
         else:
             return jsonify({
                 "success": False,
-                "message": "Të dhënat e hyrjes janë të pasakta."
+                "message": get_t().get('flash_invalid_cred')
             }), 401
     except Exception as e:
         print(f"Login API Error: {e}")
@@ -149,7 +227,7 @@ def api_login():
         traceback.print_exc()
         return jsonify({
             "success": False,
-            "message": "Diçka shkoi keq. Provo përsëri."
+            "message": get_t().get('err_generic')
         }), 500
 
 @app.route('/api/auth/signup', methods=['POST'])
@@ -221,7 +299,7 @@ def api_signup():
         if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
             return jsonify({
                 "success": False,
-                "message": "Ky email ose përdorues ekziston tashmë."
+                "message": get_t().get('auth_duplicate')
             }), 409
 
         # Create user
@@ -235,10 +313,13 @@ def api_signup():
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
+        session.permanent = True
+        login_user(new_user, remember=True, duration=timedelta(days=14))
 
         return jsonify({
             "success": True,
-            "message": "Llogaria u krijua me sukses."
+            "message": get_t().get('auth_signup_success'),
+            "redirect_url": url_for('home')
         }), 201
 
     except Exception as e:
@@ -248,7 +329,7 @@ def api_signup():
         traceback.print_exc()
         return jsonify({
             "success": False,
-            "message": "Diçka shkoi keq. Provo përsëri."
+            "message": get_t().get('err_generic')
         }), 500
 
 @app.route('/logout')

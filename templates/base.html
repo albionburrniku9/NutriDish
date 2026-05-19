@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NutriDish - AI Recipe Assistant</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.svg') }}">
     <!-- Google Fonts: Inter + Lora -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,17 +33,22 @@
         <div class="blob blob-3"></div>
     </div>
 
-    <nav class="glass-nav">
+    <nav class="glass-nav {% if current_user.is_authenticated %}is-authenticated{% endif %}">
         <a href="{{ url_for('home') }}" class="logo" style="text-decoration: none; color: inherit;">
             <span class="logo-icon">N</span>
             NutriDish <span class="ai-badge">AI</span>
         </a>
+        {% if current_user.is_authenticated %}
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle" type="button" aria-label="Open navigation menu" aria-expanded="false">
+            <ion-icon name="menu-outline"></ion-icon>
+        </button>
+        {% endif %}
         <ul class="nav-links">
-            <li><a href="{{ url_for('home') }}" class="active">{{ t['nav_home'] }}</a></li>
+            <li><a href="{{ url_for('home') }}" class="{% if request.endpoint == 'home' %}active{% endif %}">{{ t['nav_home'] }}</a></li>
 
             {% if current_user.is_authenticated %}
-            <li><a href="{{ url_for('saved') }}">{{ t['nav_saved'] }}</a></li>
-            <li><a href="{{ url_for('profile') }}">{{ t['nav_profile'] }}</a></li>
+            <li><a href="{{ url_for('saved') }}" class="{% if request.endpoint == 'saved' %}active{% endif %}">{{ t['nav_saved'] }}</a></li>
+            <li><a href="{{ url_for('profile') }}" class="{% if request.endpoint == 'profile' %}active{% endif %}">{{ t['nav_profile'] }}</a></li>
             <li><a href="{{ url_for('logout') }}" style="color: var(--safety-red);">{{ t['nav_logout'] }}</a></li>
             {% else %}
             <li><a href="{{ url_for('login') }}">{{ t['nav_login'] }}</a></li>
@@ -59,6 +66,18 @@
     <!-- Auto-Detect Language Script -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+            const navLinks = document.querySelector('.nav-links');
+
+            if (mobileMenuToggle && navLinks) {
+                mobileMenuToggle.addEventListener('click', () => {
+                    const isOpen = navLinks.classList.toggle('open');
+                    mobileMenuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                    const icon = mobileMenuToggle.querySelector('ion-icon');
+                    if (icon) icon.setAttribute('name', isOpen ? 'close-outline' : 'menu-outline');
+                });
+            }
+
             // Check if user has already set a language preference via cookie
             const userLang = getCookie('lang');
 
