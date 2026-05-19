@@ -8,8 +8,13 @@ import re
 
 app = Flask(__name__)
 # Config
-app.config['SECRET_KEY'] = 'your-secret-key-change-this' # Simple secret key for MVP
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///nutridish_v2.db'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-this')
+
+database_url = os.getenv('DATABASE_URL') or os.getenv('LOCAL_DATABASE_URL') or 'sqlite:///nutridish_v2.db'
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Init extensions
@@ -469,4 +474,4 @@ def react_app():
     return render_template('react_app.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=os.getenv('FLASK_DEBUG') == '1')
