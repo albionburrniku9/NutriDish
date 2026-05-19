@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from concurrent.futures import ThreadPoolExecutor
 import difflib
 import os
 import random
@@ -16,6 +17,8 @@ class RecipeRecommender:
         self.vectorizer = None
         self.tfidf_matrix = None
         self.all_ingredients = []
+        self.recipe_search_cache = {}
+        self.recipe_details_cache = {}
 
         # Simple Translation Map (AL/DE -> EN)
         # Added non-accented versions for better UX (e.g. qumesht)
@@ -212,11 +215,13 @@ class RecipeRecommender:
         random.shuffle(candidates)
         candidates = candidates[:6] # Limit to 6 for speed
         
-        final_recipes = []
         avoid_keywords = self._get_restriction_keywords(restriction)
-        
-        for meal in candidates:
-            details = self._get_recipe_details_api(meal['idMeal'])
+
+        with ThreadPoolExecutor(max_workers=min(6, len(candidates))) as executor:
+            details_list = list(executor.map(lambda meal: self._get_recipe_details_api(meal['idMeal']), candidates))
+
+        final_recipes = []
+        for details in details_list:
             if not details: continue
             
             meal_ingredients = []
@@ -254,17 +259,29 @@ class RecipeRecommender:
         return []
 
     def _get_recipes_by_ingredient_api(self, ingredient):
+        cache_key = ingredient.strip().lower()
+        if cache_key in self.recipe_search_cache:
+            return self.recipe_search_cache[cache_key]
+
         try:
-            url = f"{self.api_base}filter.php?i={ingredient}"
-            r = requests.get(url, timeout=5).json()
-            return r.get('meals') or []
+            url = f"{self.api_base}filter.php?i={cache_key}"
+            r = requests.get(url, timeout=4).json()
+            meals = r.get('meals') or []
+            self.recipe_search_cache[cache_key] = meals
+            return meals
         except: return []
 
     def _get_recipe_details_api(self, id_meal):
+        if id_meal in self.recipe_details_cache:
+            return self.recipe_details_cache[id_meal]
+
         try:
             url = f"{self.api_base}lookup.php?i={id_meal}"
-            r = requests.get(url, timeout=5).json()
-            return r.get('meals')[0] if r.get('meals') else None
+            r = requests.get(url, timeout=4).json()
+            details = r.get('meals')[0] if r.get('meals') else None
+            if details:
+                self.recipe_details_cache[id_meal] = details
+            return details
         except: return None
     
     # Placeholder for local recommendation if used

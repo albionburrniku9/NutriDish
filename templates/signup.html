@@ -65,8 +65,8 @@
     }
 
     .auth-input:focus {
-        border-color: #8FAF8A;
-        box-shadow: 0 0 0 2px rgba(143, 175, 138, 0.15);
+        border-color: #8FA98B;
+        box-shadow: 0 0 0 2px rgba(143, 169, 139, 0.18);
     }
 
     .auth-input.input-error {
@@ -94,7 +94,7 @@
     }
 
     .eye-toggle-btn:hover {
-        color: #8FAF8A;
+        color: #A8B89F;
     }
 
     /* Small clear inline red error message directly under the field */
@@ -143,7 +143,7 @@
     /* Primary Sage Green CTA Button */
     .btn-primary {
         width: 100%;
-        background: #8FAF8A;
+        background: #8FA98B;
         color: white;
         border: none;
         border-radius: 30px;
@@ -153,7 +153,7 @@
         cursor: pointer;
         transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
         margin-top: 10px;
-        box-shadow: 0 4px 15px rgba(143, 175, 138, 0.25);
+        box-shadow: 0 4px 15px rgba(143, 169, 139, 0.25);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -161,13 +161,13 @@
     }
 
     .btn-primary:hover:not(:disabled) {
-        background: #A7C6A1;
+        background: #A8B89F;
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(143, 175, 138, 0.4);
+        box-shadow: 0 6px 20px rgba(143, 169, 139, 0.38);
     }
     
     .btn-primary:active:not(:disabled) {
-        background: #6F8F6A;
+        background: #6B8067;
         transform: translateY(0);
     }
 
@@ -188,14 +188,14 @@
     }
 
     .login-link a {
-        color: #8FAF8A;
+        color: #A8B89F;
         text-decoration: none;
         font-weight: 600;
         transition: color 0.2s;
     }
 
     .login-link a:hover {
-        color: #A7C6A1;
+        color: #D6E2D1;
         text-decoration: underline;
     }
 
@@ -215,8 +215,8 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-            <div style="background: {% if category == 'success' %}rgba(143, 175, 138, 0.2){% else %}rgba(239, 68, 68, 0.2){% endif %}; 
-                        color: {% if category == 'success' %}#A7C6A1{% else %}#fca5a5{% endif %}; 
+            <div style="background: {% if category == 'success' %}rgba(143, 169, 139, 0.22){% else %}rgba(239, 68, 68, 0.2){% endif %}; 
+                        color: {% if category == 'success' %}#D6E2D1{% else %}#fca5a5{% endif %}; 
                         padding: 12px; border-radius: 12px; text-align: center; margin-bottom: 20px; font-size: 0.95rem; font-weight: 500;">
                 {{ message }}
             </div>
@@ -477,11 +477,11 @@
                 label.textContent = strMed;
                 label.style.color = '#f59e0b';
             } else if (score === 3) {
-                seg1.style.background = '#8FAF8A'; // Strong
-                seg2.style.background = '#8FAF8A';
-                seg3.style.background = '#8FAF8A';
+                seg1.style.background = '#8FA98B'; // Strong
+                seg2.style.background = '#8FA98B';
+                seg3.style.background = '#8FA98B';
                 label.textContent = strStrong;
-                label.style.color = '#8FAF8A';
+                label.style.color = '#A8B89F';
             } else {
                 label.textContent = strLabel;
                 label.style.color = '#71717a';
@@ -601,8 +601,7 @@
                 const data = await response.json();
 
                 if (response.status === 201) {
-                    // Success, redirect to login page
-                    window.location.href = "{{ url_for('login') }}";
+                    window.location.href = data.redirect_url || "{{ url_for('home') }}";
                 } else if (response.status === 400 && data.errors) {
                     // Show field-level validation errors
                     submitBtn.disabled = false;
@@ -622,16 +621,17 @@
                     submitBtn.disabled = false;
                     btnText.innerHTML = originalBtnText;
                     globalErrorDiv.style.display = 'block';
-                    globalErrorDiv.textContent = data.message || "Diçka shkoi keq. Provo përsëri.";
+                    globalErrorDiv.textContent = data.message || "{{ t['err_generic'] }}";
                 }
             } catch (err) {
                 // Client side error catch
                 submitBtn.disabled = false;
                 btnText.innerHTML = originalBtnText;
                 globalErrorDiv.style.display = 'block';
-                globalErrorDiv.textContent = "Diçka shkoi keq. Provo përsëri.";
+                globalErrorDiv.textContent = "{{ t['err_generic'] }}";
             }
         });
     });
 </script>
 {% endblock %}
+
