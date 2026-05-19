@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, jsonify, make_response, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from ai_engine import RecipeRecommender
 from translations import translations
 from models import db, User, SavedRecipe
 import os
@@ -23,11 +22,18 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-recommender = RecipeRecommender()
+recommender = None
 
-# Create DB
-with app.app_context():
-    db.create_all()
+def get_recommender():
+    global recommender
+    if recommender is None:
+        from ai_engine import RecipeRecommender
+        recommender = RecipeRecommender()
+    return recommender
+
+if os.getenv('AUTO_CREATE_TABLES') == '1':
+    with app.app_context():
+        db.create_all()
 
 def get_t():
     lang = request.cookies.get('lang', 'en')
@@ -48,6 +54,10 @@ def inject_conf_var():
 @app.route('/')
 def home():
     return render_template('index.html')
+
+@app.route('/favicon.ico')
+def favicon():
+    return '', 204
 
 # --- AUTH ROUTES ---
 @app.route('/login', methods=['GET', 'POST'])
@@ -270,7 +280,7 @@ def saved():
     if lang != 'en' and recipes:
         print(f"DEBUG: Translating to {lang}...")
         try:
-            recipes = recommender._translate_results(recipes, lang)
+            recipes = get_recommender()._translate_results(recipes, lang)
             print(f"DEBUG: Translation complete")
         except Exception as e:
             print(f"Profile Translation Error: {e}")
@@ -378,7 +388,7 @@ def recommend():
         # Get language from cookie to help with translation
         lang = request.cookies.get('lang', 'en')
         
-        result = recommender.recommend(ingredients, restriction, lang=lang)
+        result = get_recommender().recommend(ingredients, restriction, lang=lang)
         
         # Increment usage if successful
         if result.get('status') == 'success':
