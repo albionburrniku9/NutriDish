@@ -59,6 +59,34 @@ def home():
 def favicon():
     return '', 204
 
+@app.route('/api/health/db')
+def db_health():
+    try:
+        from sqlalchemy import inspect, text
+
+        with db.engine.connect() as connection:
+            connection.execute(text('SELECT 1'))
+
+        inspector = inspect(db.engine)
+        tables = set(inspector.get_table_names())
+        required_tables = {'users', 'saved_recipes', 'dietary_profiles'}
+        missing_tables = sorted(required_tables - tables)
+
+        return jsonify({
+            'success': not missing_tables,
+            'database_connected': True,
+            'missing_tables': missing_tables
+        }), 200 if not missing_tables else 503
+    except Exception as e:
+        print(f"DB Health Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'database_connected': False,
+            'message': str(e.__class__.__name__)
+        }), 500
+
 # --- AUTH ROUTES ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
